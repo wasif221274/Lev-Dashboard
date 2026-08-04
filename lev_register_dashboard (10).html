@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LEV Register — Syngenta Pakistan</title>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --green-900:#0B3D1E;
+    --green-700:#0F6B33;
+    --green-600:#128A3E;
+    --green-500:#1CA24B;
+    --lime-400:#8FD14F;
+    --lime-300:#B7E67E;
+    --paper:#F6F9F3;
+    --card:#FFFFFF;
+    --ink:#16231A;
+    --ink-soft:#54655A;
+    --line:#DCE7DA;
+    --fail:#C4423A;
+    --fail-bg:#FBEAE8;
+    --warn:#B8791C;
+    --warn-bg:#FBF1DF;
+    --pass-bg:#E7F6EA;
+    --pending:#8A9A85;
+    --pending-bg:#EEF2EC;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1280px; margin:0 auto; padding:0 0 60px;}
+
+  /* ===== Header ===== */
+  .topbar{
+    background:linear-gradient(120deg, var(--green-900) 0%, var(--green-700) 55%, var(--green-600) 100%);
+    color:#fff; padding:28px 32px 24px; position:relative; overflow:hidden;
+  }
+  .topbar::after{
+    content:""; position:absolute; right:-60px; top:-80px; width:280px; height:280px;
+    background:radial-gradient(circle, rgba(143,209,79,0.35) 0%, rgba(143,209,79,0) 70%);
+  }
+  .brand-row{display:flex; align-items:center; justify-content:space-between; gap:16px; position:relative; z-index:1;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:var(--lime-400); display:flex;align-items:center;justify-content:center;
+    font-weight:800; color:var(--green-900); font-size:18px; letter-spacing:-1px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.25);
+  }
+  .brand-name{font-size:13px; letter-spacing:3px; text-transform:uppercase; opacity:0.85; font-weight:600;}
+  .doc-title{font-size:26px; font-weight:700; margin-top:2px; letter-spacing:-0.3px;}
+  .site-meta{text-align:right; font-size:12.5px; line-height:1.5; opacity:0.9; max-width:280px;}
+  .live-pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
+    background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
+    padding:4px 10px 4px 8px; border-radius:99px; margin-top:8px;
+  }
+  .live-dot{width:7px;height:7px;border-radius:50%; background:var(--lime-400); box-shadow:0 0 0 0 rgba(143,209,79,0.7); animation:pulse 1.8s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(143,209,79,0.55);}
+    70%{box-shadow:0 0 0 7px rgba(143,209,79,0);}
+    100%{box-shadow:0 0 0 0 rgba(143,209,79,0);}
+  }
+
+  /* ===== KPI strip ===== */
+  .kpis{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:14px;
+    padding:20px 32px 0; margin-top:-10px; position:relative; z-index:2;
+  }
+  .kpi{
+    background:var(--card); border-radius:14px; padding:16px 18px;
+    border:1px solid var(--line); box-shadow:0 6px 18px rgba(15,60,30,0.06);
+  }
+  .kpi .num{font-size:26px; font-weight:800; font-family:var(--mono); letter-spacing:-1px;}
+  .kpi .lbl{font-size:11.5px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-soft); margin-top:2px; font-weight:600;}
+  .kpi.total .num{color:var(--green-700);}
+  .kpi.pass .num{color:var(--green-600);}
+  .kpi.needs .num{color:var(--warn);}
+  .kpi.fail .num{color:var(--fail);}
+  .kpi.pending .num{color:var(--pending);}
+  .kpi .bar{height:4px;border-radius:99px;background:var(--line); margin-top:10px; overflow:hidden;}
+  .kpi .bar span{display:block; height:100%; border-radius:99px;}
+  .kpi.total .bar span{background:var(--green-700); width:100%;}
+  .kpi.pass .bar span{background:var(--green-600);}
+  .kpi.needs .bar span{background:var(--warn);}
+  .kpi.fail .bar span{background:var(--fail);}
+  .kpi.pending .bar span{background:var(--pending);}
+
+  /* ===== Toolbar ===== */
+  .toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:22px 32px 10px; flex-wrap:wrap;
+  }
+  .toolbar h2{font-size:16px; margin:0; font-weight:700; color:var(--green-900);}
+  .toolbar .sub{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .controls{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  select, .btn{
+    font-family:var(--sans); font-size:12.5px; border-radius:9px; border:1px solid var(--line);
+    background:#fff; padding:8px 12px; color:var(--ink); cursor:pointer; font-weight:600;
+  }
+  .btn.primary{background:var(--green-600); color:#fff; border-color:var(--green-600);}
+  .btn.primary:hover{background:var(--green-700);}
+  .btn.ghost:hover{background:var(--paper);}
+  .btn:active{transform:translateY(1px);}
+  .btn.sensor{
+    background:var(--green-900); color:#fff; border-color:var(--green-900); font-size:11px;
+    padding:6px 9px; display:inline-flex; align-items:center; gap:5px;
+  }
+  .btn.sensor .dot{width:6px;height:6px;border-radius:50%;background:var(--lime-400); animation:pulse 1.6s infinite;}
+
+  .user-chip{
+    display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--ink-soft);
+    background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 10px;
+  }
+  .user-chip input{
+    border:none; outline:none; font-family:var(--sans); font-size:12.5px; font-weight:700; color:var(--green-700);
+    width:110px; background:transparent;
+  }
+  .last-updated{font-size:11px; color:var(--ink-soft); white-space:nowrap; line-height:1.4;}
+  .last-updated b{color:var(--ink); font-weight:700; display:block;}
+
+  /* ===== Table ===== */
+  .table-card{
+    margin:10px 32px 0; background:var(--card); border:1px solid var(--line); border-radius:16px;
+    overflow:hidden; box-shadow:0 8px 24px rgba(15,60,30,0.05);
+  }
+  table{width:100%; min-width:1180px; border-collapse:collapse; font-size:13px;}
+  thead th{
+    text-align:left; background:var(--green-900); color:#fff; font-weight:600;
+    font-size:11px; text-transform:uppercase; letter-spacing:0.6px; padding:12px 12px;
+    position:sticky; top:0;
+  }
+  tbody tr{border-bottom:1px solid var(--line);}
+  tbody tr:hover{background:#FAFDF8;}
+  tbody tr.row-fail{box-shadow:inset 3px 0 0 var(--fail);}
+  tbody tr.row-needs{box-shadow:inset 3px 0 0 var(--warn);}
+  tbody tr.row-pass{box-shadow:inset 3px 0 0 var(--green-600);}
+  tbody tr.row-pending{box-shadow:inset 3px 0 0 var(--pending);}
+  td{padding:9px 12px; vertical-align:middle; color:var(--ink);}
+  td.id-cell{font-family:var(--mono); font-weight:700; color:var(--green-700); white-space:nowrap; cursor:pointer;}
+  td.id-cell:hover{text-decoration:underline;}
+  td.id-cell .arrow{opacity:0; transition:opacity .15s; margin-left:4px;}
+  tr:hover td.id-cell .arrow{opacity:1;}
+  .loc-link{cursor:pointer;}
+  .loc-link:hover{text-decoration:underline; color:var(--green-700);}
+  [contenteditable="true"]{
+    outline:none; border-radius:6px; padding:3px 5px; min-width:20px; display:inline-block;
+  }
+  [contenteditable="true"]:hover{background:var(--paper);}
+  [contenteditable="true"]:focus{background:#fff; box-shadow:0 0 0 2px var(--green-500);}
+  [contenteditable="true"]:empty::before{content:attr(data-ph); color:#B7C2B4;}
+  td select{padding:5px 7px; font-size:12px; border-radius:6px;}
+  .status-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700;
+    padding:4px 10px; border-radius:99px; text-transform:uppercase; letter-spacing:0.4px;
+  }
+  .status-badge.PASS{background:var(--pass-bg); color:var(--green-700);}
+  .status-badge.FAIL{background:var(--fail-bg); color:var(--fail);}
+  .status-badge.NEEDS_IMPROVEMENT{background:var(--warn-bg); color:var(--warn);}
+  .status-badge.PENDING{background:var(--pending-bg); color:var(--pending);}
+  .testval{font-family:var(--mono); font-weight:700; width:64px; text-align:right; border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-size:12.5px;}
+  .row-actions{display:flex; gap:6px; align-items:center; white-space:nowrap;}
+  .icon-btn{
+    border:none; background:none; cursor:pointer; padding:4px; border-radius:6px; color:var(--ink-soft);
+    font-size:14px; line-height:1;
+  }
+  .icon-btn:hover{background:var(--fail-bg); color:var(--fail);}
+  .yn{padding:4px 8px; font-size:11.5px; border-radius:7px; font-weight:700;}
+  .yn.Yes{background:var(--pass-bg); color:var(--green-700);}
+  .yn.No{background:var(--fail-bg); color:var(--fail);}
+
+  .footer-note{padding:16px 32px 0; font-size:11.5px; color:var(--ink-soft); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+  .save-state{font-family:var(--mono);}
+
+  /* ===== Detail view ===== */
+  #detailView{display:none;}
+  .detail-topbar{
+    background:linear-gradient(120deg, var(--green-900) 0%, var(--green-700) 55%, var(--green-600) 100%);
+    color:#fff; padding:20px 32px; position:relative; overflow:hidden;
+  }
+  .back-btn{
+    background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.3); color:#fff;
+    padding:7px 14px; border-radius:9px; font-size:12.5px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px; margin-bottom:14px;
+  }
+  .back-btn:hover{background:rgba(255,255,255,0.24);}
+  .detail-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; position:relative; z-index:1;}
+  .detail-title{font-size:24px; font-weight:800; font-family:var(--mono); letter-spacing:-0.5px;}
+  .detail-loc{font-size:14px; opacity:0.9; margin-top:4px;}
+  .detail-status{margin-top:10px;}
+
+  .detail-body{padding:24px 32px;}
+  .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media (max-width:800px){.detail-grid{grid-template-columns:1fr;}}
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px;
+    box-shadow:0 6px 16px rgba(15,60,30,0.05);
+  }
+  .panel h3{
+    margin:0 0 12px; font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--green-700);
+    font-weight:800; display:flex; align-items:center; gap:8px;
+  }
+  .panel h3::before{content:""; width:8px;height:8px;border-radius:2px; background:var(--lime-400); display:inline-block;}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px; align-items:center;}
+  .kv dt{color:var(--ink-soft); font-weight:600; white-space:nowrap;}
+  .kv dd{margin:0; word-break:break-word;}
+  .kv-edit{
+    width:100%; font-family:var(--sans); font-size:12.5px; padding:6px 8px; border:1px solid var(--line);
+    border-radius:7px; background:#fff; box-sizing:border-box; color:var(--ink);
+  }
+  .kv-edit:focus{outline:none; border-color:var(--green-500); box-shadow:0 0 0 2px rgba(28,162,75,0.15);}
+  textarea.kv-edit{resize:vertical; font-family:var(--sans);}
+
+  .doc-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding:11px 0; border-bottom:1px solid var(--line);
+  }
+  .doc-row:last-child{border-bottom:none;}
+  .doc-row-left{display:flex; align-items:center; gap:10px; font-size:12.5px; font-weight:600;}
+  .doc-title-txt{min-width:140px; color:var(--ink);}
+  .doc-row-left select{padding:5px 8px; font-size:12px; border-radius:7px; border:1px solid var(--line);}
+  .doc-row-right{display:flex; align-items:center; gap:8px; font-size:12px;}
+  .doc-file-link{color:var(--green-700); font-weight:700; text-decoration:none; font-size:12.5px;}
+  .doc-file-link:hover{text-decoration:underline;}
+  .doc-file-input{font-size:11px; max-width:190px;}
+  .panel.full{grid-column:1 / -1;}
+  .actions-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .actions-list li{
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .prio{
+    flex-shrink:0; font-size:10px; font-weight:800; text-transform:uppercase; padding:3px 8px;
+    border-radius:99px; letter-spacing:0.4px; white-space:nowrap;
+  }
+  .prio.high{background:var(--fail-bg); color:var(--fail);}
+  .prio.normal{background:var(--warn-bg); color:var(--warn);}
+  .prio.routine{background:var(--pass-bg); color:var(--green-700);}
+  .prio.na{background:var(--pending-bg); color:var(--pending);}
+  .empty-note{color:var(--ink-soft); font-size:13px; font-style:italic;}
+
+  .panel-head-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+  .panel-head-row h3{margin:0;}
+  .mini-btn{
+    font-family:var(--sans); font-size:11px; font-weight:700; border:1px solid var(--line);
+    background:#fff; padding:5px 10px; border-radius:8px; cursor:pointer; color:var(--green-700);
+  }
+  .mini-btn:hover{background:var(--paper);}
+  .table-scroll{overflow-x:auto; border-radius:10px; border:1px solid var(--line);}
+  table.data-tbl{width:100%; border-collapse:collapse; font-size:12px; min-width:900px;}
+  table.data-tbl thead th{
+    background:var(--green-700); color:#fff; font-size:10px; text-transform:uppercase;
+    letter-spacing:0.4px; padding:8px 8px; text-align:left; white-space:nowrap; font-weight:700;
+  }
+  table.data-tbl tbody td{padding:5px 6px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  table.data-tbl tbody tr:nth-child(even){background:#FAFDF8;}
+  table.data-tbl input{
+    width:70px; font-family:var(--mono); font-size:11.5px; border:1px solid var(--line);
+    border-radius:6px; padding:4px 5px; background:#fff;
+  }
+  table.data-tbl input.txt{width:90px; font-family:var(--sans);}
+  table.data-tbl input.id-in{width:40px; font-weight:700; color:var(--green-700);}
+  table.data-tbl td.del-cell{text-align:center;}
+  .section-divider{font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-soft); padding:8px 2px 4px;}
+
+  /* ===== Tab bar ===== */
+  .tabbar{
+    display:flex; gap:6px; padding:14px 32px 0; background:var(--paper);
+  }
+  .tab-btn{
+    font-family:var(--sans); font-size:13px; font-weight:700; padding:10px 18px;
+    border:1px solid var(--line); border-bottom:none; background:#EFF4EC; color:var(--ink-soft);
+    border-radius:10px 10px 0 0; cursor:pointer; position:relative; top:1px;
+  }
+  .tab-btn.active{background:var(--card); color:var(--green-700); border-color:var(--line); box-shadow:0 -3px 10px rgba(15,60,30,0.04);}
+  .tab-btn:hover:not(.active){background:#E4EEE0;}
+
+  /* ===== Home view ===== */
+  #homeView{padding:22px 32px 10px;}
+  .home-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:16px; margin-bottom:16px;}
+  @media (max-width:900px){.home-grid{grid-template-columns:1fr;}}
+  .home-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px;
+    box-shadow:0 6px 18px rgba(15,60,30,0.05);
+  }
+  .home-panel h3{
+    margin:0 0 4px; font-size:13px; text-transform:uppercase; letter-spacing:0.8px; color:var(--green-700);
+    font-weight:800;
+  }
+  .home-panel .sub{font-size:11.5px; color:var(--ink-soft); margin-bottom:14px;}
+
+  .donut-wrap{display:flex; align-items:center; gap:22px; flex-wrap:wrap;}
+  .donut-legend{display:flex; flex-direction:column; gap:9px; font-size:12.5px;}
+  .donut-legend .li{display:flex; align-items:center; gap:8px;}
+  .donut-legend .sw{width:11px;height:11px;border-radius:3px; flex-shrink:0;}
+  .donut-legend b{font-family:var(--mono);}
+
+  .bars-chart{display:flex; flex-direction:column; gap:9px;}
+  .bar-row{display:grid; grid-template-columns:56px 1fr 52px; align-items:center; gap:10px; font-size:11.5px;}
+  .bar-row .lbl{font-family:var(--mono); font-weight:700; color:var(--green-700); cursor:pointer;}
+  .bar-row .lbl:hover{text-decoration:underline;}
+  .bar-track{position:relative; height:14px; background:var(--paper); border-radius:99px; overflow:visible; border:1px solid var(--line);}
+  .bar-fill{position:absolute; left:0; top:0; height:100%; border-radius:99px; transition:width .4s ease;}
+  .bar-thresh{position:absolute; top:-3px; width:2px; height:20px; background:var(--ink-soft); opacity:0.5;}
+  .bar-val{font-family:var(--mono); font-weight:700; text-align:right;}
+
+  .status-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:12px;
+  }
+  .status-card{
+    border:1px solid var(--line); border-radius:12px; padding:13px 14px; cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease; background:#fff;
+  }
+  .status-card:hover{transform:translateY(-2px); box-shadow:0 8px 18px rgba(15,60,30,0.09);}
+  .status-card .top-row{display:flex; justify-content:space-between; align-items:flex-start; gap:6px;}
+  .status-card .sid{font-family:var(--mono); font-weight:800; color:var(--green-700); font-size:12.5px;}
+  .status-dot{width:10px;height:10px;border-radius:50%; margin-top:3px; flex-shrink:0;}
+  .status-dot.PASS{background:var(--green-600); box-shadow:0 0 0 3px var(--pass-bg);}
+  .status-dot.FAIL{background:var(--fail); box-shadow:0 0 0 3px var(--fail-bg);}
+  .status-dot.NEEDS_IMPROVEMENT{background:var(--warn); box-shadow:0 0 0 3px var(--warn-bg);}
+  .status-dot.PENDING{background:var(--pending); box-shadow:0 0 0 3px var(--pending-bg);}
+  .status-card .loc{font-size:12px; color:var(--ink); margin-top:6px; line-height:1.3; min-height:31px;}
+  .status-card .val{font-size:11px; color:var(--ink-soft); margin-top:6px; font-family:var(--mono);}
+
+  .attention-list{display:flex; flex-direction:column; gap:8px;}
+  .attn-item{
+    display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:10px;
+    border:1px solid var(--line); cursor:pointer; font-size:12.5px;
+  }
+  .attn-item:hover{background:var(--paper);}
+  .attn-item .sid{font-family:var(--mono); font-weight:800; color:var(--green-700); min-width:56px;}
+  .attn-item .loc{flex:1; color:var(--ink);}
+  .attn-empty{
+    display:flex; align-items:center; gap:8px; color:var(--green-700); font-size:13px; font-weight:600;
+    padding:14px; background:var(--pass-bg); border-radius:10px;
+  }
+
+  .ring-wrap{position:relative; width:150px; height:150px; flex-shrink:0;}
+  .ring-center{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .ring-center .pct{font-size:26px; font-weight:800; font-family:var(--mono); color:var(--green-700);}
+  .ring-center .cap{font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;}
+
+  .param-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .param-table th{
+    text-align:left; padding:7px 10px; background:var(--paper); color:var(--ink-soft);
+    font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; border-bottom:1px solid var(--line);
+  }
+  .param-table td{padding:8px 10px; border-bottom:1px solid var(--line);}
+  .param-table tr:last-child td{border-bottom:none;}
+  .param-table .range{font-family:var(--mono); font-weight:700;}
+  .param-note{font-size:11px; color:var(--ink-soft); margin-top:10px; line-height:1.5;}
+
+  /* ===== Role gate modal ===== */
+  .role-overlay{
+    position:fixed; inset:0; background:rgba(11,61,30,0.55); backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center; z-index:999; padding:20px;
+  }
+  .role-card{
+    background:#fff; border-radius:18px; padding:28px 30px 26px; max-width:440px; width:100%;
+    box-shadow:0 20px 50px rgba(0,0,0,0.25);
+  }
+  .role-brand{
+    display:flex; align-items:center; gap:10px; font-size:12px; font-weight:700; color:var(--green-700);
+    text-transform:uppercase; letter-spacing:0.6px; margin-bottom:18px;
+  }
+  .role-brand .brand-mark{width:26px;height:26px;border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--green-900); font-weight:800;}
+  .role-card h2{font-size:18px; margin:0 0 16px; color:var(--ink); font-weight:800;}
+  .role-options{display:flex; flex-direction:column; gap:10px;}
+  .role-opt{
+    text-align:left; border:1.5px solid var(--line); border-radius:12px; padding:14px 16px;
+    background:#fff; cursor:pointer; display:flex; flex-direction:column; gap:4px; transition:all .12s ease;
+  }
+  .role-opt:hover{border-color:var(--green-500); background:var(--paper);}
+  .role-opt-title{font-size:14.5px; font-weight:700; color:var(--ink);}
+  .role-opt-sub{font-size:12px; color:var(--ink-soft); line-height:1.4;}
+  .editor-name-block{margin-top:16px; padding-top:16px; border-top:1px solid var(--line);}
+  .editor-name-block label{font-size:12px; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .editor-name-block input{
+    width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:9px; font-size:14px;
+    font-family:var(--sans); box-sizing:border-box;
+  }
+  .editor-name-block input:focus{outline:none; border-color:var(--green-500);}
+  .editor-name-error{color:var(--fail); font-size:11.5px; margin-top:6px; min-height:14px;}
+
+  .viewer-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
+    background:var(--pending-bg); color:var(--pending); padding:5px 11px; border-radius:99px;
+  }
+  .editor-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
+    background:var(--pass-bg); color:var(--green-700); padding:5px 11px; border-radius:99px; cursor:pointer;
+  }
+
+  @media (max-width:900px){
+    #homeView{padding:18px 16px 8px;}
+    .tabbar{padding:12px 16px 0;}
+  }
+
+  @media (max-width:900px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .table-card{margin:10px 12px 0;}
+    .topbar, .detail-topbar{padding:22px 16px;}
+    .toolbar{padding:18px 16px 8px;}
+    .footer-note{padding:16px 16px 0;}
+    .detail-body{padding:18px 16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand-row">
+      <div>
+        <div class="brand">
+          <div class="brand-mark">Sy</div>
+          <div class="brand-name">Syngenta Pakistan Limited</div>
+        </div>
+        <div class="doc-title">Local Exhaust Ventilation (LEV) Dashboard</div>
+        <div class="live-pill"><span class="live-dot"></span> Sensor link active — values sync live</div>
+      </div>
+      <div class="site-meta">
+        <strong>Karachi Site</strong><br>
+        S-50 S.I.T.E, Hawksbay Road,<br>
+        Karachi, Pakistan
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab-btn active" id="tabHomeBtn">🏠 Home</button>
+    <button class="tab-btn" id="tabRegisterBtn">📋 Register</button>
+    <button class="tab-btn" id="tabLogBtn">🕓 Change Log</button>
+    <span id="globalRoleBadge" style="margin-left:auto; align-self:center;"></span>
+  </div>
+
+  <!-- ============ HOME VIEW ============ -->
+  <div id="homeView"></div>
+
+  <!-- ============ REGISTER (LIST) VIEW ============ -->
+  <div id="listView" style="display:none;">
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="toolbar">
+      <div>
+        <h2>LEV Systems</h2>
+        <div class="sub">Click a System ID or location to open the full compliance record. Edit cells directly — status is computed automatically from each system's Hood Test Results.</div>
+      </div>
+      <div class="controls">
+        <span id="roleStatusBadge"></span>
+        <button id="refreshDataBtn" class="btn ghost" title="Pull the latest data other people may have entered">↻ Refresh data</button>
+        <select id="filterStatus">
+          <option value="ALL">All statuses</option>
+          <option value="PASS">Pass</option>
+          <option value="FAIL">Fail</option>
+          <option value="NEEDS_IMPROVEMENT">Needs improvement</option>
+          <option value="PENDING">Pending / not tested</option>
+        </select>
+        <button id="addRowBtn" class="btn ghost editor-only">+ Add LEV system</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>System ID</th>
+            <th>Location of LEV</th>
+            <th>LEV Owner</th>
+            <th>Commissioning Report</th>
+            <th>User Manual</th>
+            <th>Avg. Hood Velocity</th>
+            <th>Level of Control</th>
+            <th>Actions Identified</th>
+            <th>Responsible Person</th>
+            <th>Due Date</th>
+            <th>Completion Date</th>
+            <th>Last Updated</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      <span>Status is based on average hood face velocity, measured against ACGIH capture-velocity guidance: Dust Collectors 1.0–2.5 m/s · LEVs/fume systems 0.5–1.0 m/s. Below range = Fail, above range = Needs Improvement.</span>
+      <span class="save-state" id="saveState">Loading…</span>
+    </div>
+  </div>
+
+  <!-- ============ CHANGE LOG VIEW ============ -->
+  <div id="logView" style="display:none; padding:22px 32px 40px;">
+    <div class="toolbar" style="padding:0 0 14px;">
+      <div>
+        <h2>Change Log</h2>
+        <div class="sub">Every edit made to register, hood, and duct data, with who made it and when.</div>
+      </div>
+      <div class="controls">
+        <select id="logFilterLev">
+          <option value="ALL">All systems</option>
+        </select>
+        <button id="clearLogBtn" class="btn ghost editor-only">Clear log</button>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-scroll">
+        <table class="data-tbl" id="logTable" style="min-width:760px;">
+          <thead>
+            <tr><th>Date &amp; Time</th><th>LEV</th><th>Area</th><th>Field</th><th>Previous Value</th><th>New Value</th><th>Updated By</th></tr>
+          </thead>
+          <tbody id="logTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DETAIL VIEW ============ -->
+  <div id="detailView">
+    <div class="detail-topbar">
+      <button class="back-btn" id="backBtn">← Back to register</button>
+      <div class="detail-head">
+        <div>
+          <div class="detail-title" id="dTitle">LEV000</div>
+          <div class="detail-loc" id="dLoc">—</div>
+          <div class="detail-status"><span class="status-badge" id="dStatusBadge">—</span></div>
+          <div id="dLastUpdated" style="font-size:11.5px; opacity:0.85; margin-top:8px;"></div>
+        </div>
+        <div class="site-meta">
+          <strong>Karachi Site</strong><br>
+          S-50 S.I.T.E, Hawksbay Road,<br>
+          Karachi, Pakistan
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-grid">
+
+        <div class="panel">
+          <h3>Test Summary</h3>
+          <div id="dTestResultLine" style="margin-bottom:12px;"></div>
+          <dl class="kv" id="dTestSummary"></dl>
+        </div>
+
+        <div class="panel">
+          <h3>Documents</h3>
+          <div class="sub" style="margin-bottom:10px;">Commissioning report, user manual, MSDS sheet, and log book — attach PDF/Excel/other files (max 4MB each)</div>
+          <div id="dDocs"></div>
+        </div>
+
+        <div class="panel">
+          <h3>System Details</h3>
+          <dl class="kv" id="dSystem"></dl>
+        </div>
+
+        <div class="panel">
+          <h3>Review Since Last Examination</h3>
+          <dl class="kv" id="dReview"></dl>
+        </div>
+
+        <div class="panel full">
+          <h3>Substances &amp; Health Effects</h3>
+          <dl class="kv" id="dSubstances" style="grid-template-columns:1fr;"></dl>
+        </div>
+
+        <div class="panel">
+          <h3>Fan Specification</h3>
+          <dl class="kv" id="dFan"></dl>
+        </div>
+
+        <div class="panel">
+          <h3>Filter Specification</h3>
+          <dl class="kv" id="dFilter"></dl>
+        </div>
+
+        <div class="panel">
+          <h3>Duct &amp; Discharge</h3>
+          <dl class="kv" id="dDuct"></dl>
+        </div>
+
+        <div class="panel">
+          <h3>Make-Up Air</h3>
+          <dl class="kv" id="dMakeup"></dl>
+        </div>
+
+        <div class="panel full">
+          <div class="panel-head-row">
+            <h3>Duct Test Results</h3>
+            <button id="addDuctRow" class="mini-btn editor-only">+ Add test point</button>
+          </div>
+          <div class="table-scroll"><table class="data-tbl" id="dDuctTable"></table></div>
+        </div>
+
+        <div class="panel full">
+          <div class="panel-head-row">
+            <h3>Hood Test Results</h3>
+            <button id="addHoodRow" class="mini-btn editor-only">+ Add test point</button>
+          </div>
+          <div class="table-scroll"><table class="data-tbl" id="dHoodTable"></table></div>
+        </div>
+
+        <div class="panel full">
+          <h3>Actions Identified</h3>
+          <ul class="actions-list" id="dActions"></ul>
+        </div>
+
+        <div class="panel full">
+          <h3>Assessment Details</h3>
+          <dl class="kv" id="dMeta"></dl>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ROLE / IDENTITY GATE ============ -->
+  <div id="roleGate" class="role-overlay">
+    <div class="role-card">
+      <div class="role-brand">
+        <div class="brand-mark" style="background:var(--lime-400);">Sy</div>
+        <span>Syngenta Pakistan — LEV Dashboard</span>
+      </div>
+      <h2>How are you using the dashboard?</h2>
+      <div class="role-options">
+        <button class="role-opt" id="roleViewerBtn">
+          <span class="role-opt-title">👁️ Viewer</span>
+          <span class="role-opt-sub">Browse the register, charts, and reports. No changes can be made.</span>
+        </button>
+        <button class="role-opt" id="roleEditorBtn">
+          <span class="role-opt-title">✏️ Editor</span>
+          <span class="role-opt-sub">Update register data, hood/duct test points, and actions.</span>
+        </button>
+      </div>
+      <div id="editorNameBlock" class="editor-name-block" style="display:none;">
+        <label for="editorNameInput">Your name (required, shown on every edit you make)</label>
+        <input type="text" id="editorNameInput" placeholder="e.g. Wasif Mansoor" autocomplete="off" />
+        <div id="editorNameError" class="editor-name-error"></div>
+        <button class="btn primary" id="editorContinueBtn" style="margin-top:10px; width:100%;">Continue as Editor</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ===== Firebase (Realtime Database) =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyBOmcEfbVZLmRQ7Y74rb_vs1CzlsYL6CKA",
+    authDomain: "lev-dashboard-c8610.firebaseapp.com",
+    databaseURL: "https://lev-dashboard-c8610-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "lev-dashboard-c8610",
+    storageBucket: "lev-dashboard-c8610.firebasestorage.app",
+    messagingSenderId: "77885246153",
+    appId: "1:77885246153:web:754b895fcdfceb411d1b18"
+  };
+  const fbApp = firebase.initializeApp(firebaseConfig);
+  const fbDb = firebase.database();
+  const registerRef = fbDb.ref('levDashboard/register');
+  const detailsRef = fbDb.ref('levDashboard/details');
+  const logRef = fbDb.ref('levDashboard/changelog');
+  const filesRef = fbDb.ref('levDashboard/files');
+  let FILES = {};
+
+  function waitForRef(ref, fallback){
+    return new Promise((resolve) => {
+      ref.once('value', snap => {
+        const v = snap.val();
+        resolve(v !== null && v !== undefined ? v : fallback);
+      }, () => resolve(fallback));
+    });
+  }
+
+  const defaultData = [
+    {id:'LEV001', location:'QC Lab LEV', owner:'Mehwish', commissioning:'Yes', manual:'Yes', testResult:0.10, status:'PASS', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV002', location:'QC Fume hood', owner:'Mehwish', commissioning:'Yes', manual:'Yes', testResult:0.04, status:'PASS', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV003', location:'SC formulation Dust collector', owner:'Mohsin', commissioning:'No', manual:'No', testResult:0.58, status:'FAIL', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV004', location:'EC Formulation Dust Collector', owner:'Asif Khan', commissioning:'No', manual:'No', testResult:0.57, status:'FAIL', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV005', location:'Insecticide LEV', owner:'Asif Khan', commissioning:'No', manual:'No', testResult:3.19, status:'FAIL', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV006', location:'Herbicide LEV', owner:'Shakir', commissioning:'No', manual:'No', testResult:0.70, status:'FAIL', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV007', location:'New SC/LEV', owner:'Mohsin', commissioning:'No', manual:'No', testResult:2.14, status:'FAIL', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV008', location:'Logran Dust Collector', owner:'Shakir', commissioning:'No', manual:'No', testResult:null, status:'PENDING', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV009', location:'Actara Dust Collector', owner:'Shakir', commissioning:'No', manual:'No', testResult:null, status:'PENDING', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV010', location:'New Virtako', owner:'Faraz', commissioning:'No', manual:'No', testResult:0.24, status:'PASS', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV011', location:'SMOC LEV', owner:'Shakir', commissioning:'No', manual:'No', testResult:0.56, status:'NEEDS_IMPROVEMENT', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV012', location:'Old Virtako', owner:'Shakir', commissioning:'No', manual:'No', testResult:0, status:'FAIL', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+    {id:'LEV013', location:'Manual Powder - Dust Collector', owner:'Shakir', commissioning:'Yes', manual:'Yes', testResult:null, status:'PENDING', actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null},
+  ];
+
+  // Full per-system compliance record, extracted from each LEV's Thorough Examination and Test Report sheet.
+  const DEFAULT_DETAILS = {"LEV001":{"System ID:":"LEV-001","Location of LEV:":"QC Lab LEV","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-20","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control the airborne concentration of toxic substances during lab tests.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"acetonitrile is is toxic if swallowed, is toxic in contact with skin, is toxic if inhaled, causes severe skin burns and eye damage, may cause cancer.\nMethanol is toxic if swallowed, is toxic in contact with skin, is toxic if inhaled, causes damage to organs.","Are the substances flammable:":"Yes","Are the substances explosive:":"Yes","Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Sasa","Motor size":"Not available","Model":"Not available","Full load current":"Not available","Serial number":"Not available","Motor speed (approx)":"Not available","Type of impeller":"Backward curve","Impeller speed (approx)":"Not available","Condition of fan":"No unusual noise/vibration","Impeller direction of rotation":"Not able to check","Type of drive":"Belt drive","Differential pressure:":"Not able to check","Filter type":"Not available","Filter media type":"Not available","Filtration area":"Not available","Condition of filter media":"Not able to check","Differential Pressure":"Not able to check","Condition of filter":"Not able to check","Suitability of position of unit":"on the roof","Condition of duct":"Rectangular, stainless steel, some sign of rust","Suitability of ductwork":"OK","Type of stack/discharge":"Rooftop horizontal discharge","Suitability of discharge":"Not suitable","Is there adequate make up air":"Yes. Fresh air blower bring fresh air into the area.","Are there any induced drafts":"No. Air conditioning system ceiling air diffuser was not operating.","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Relocate the fresh air inlet and exhaust discharge to prevent contaminants from being reintroduced into the occupied area.","priority":"1. High"},{"id":2,"action":"Evaluate the design of the  system so that all the LEV hoods will provide suitable capture velocity for the activity.","priority":"1. High"},{"id":3,"action":"Educate the user of the LEV system so that they know how to position the LEV hoods in order to provide suifficient control.","priority":"3. Routine"},{"id":4,"action":"Eliminate/avoid sharp bents of the LEV duct","priority":"2. Normal"}],"duct":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.51,"volM3s":0.040995840000000006,"volM3h":147.58502400000003,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":2,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.52,"volM3s":0.041799680000000006,"volM3h":150.47884800000003,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":3,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.54,"volM3s":0.043407360000000006,"volM3h":156.26649600000002,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":4,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.51,"volM3s":0.040995840000000006,"volM3h":147.58502400000003,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":5,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.52,"volM3s":0.041799680000000006,"volM3h":150.47884800000003,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":6,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.52,"volM3s":0.041799680000000006,"volM3h":150.47884800000003,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":7,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.52,"volM3s":0.041799680000000006,"volM3h":150.47884800000003,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":8,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.53,"volM3s":0.042603520000000006,"volM3h":153.37267200000002,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":9,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.55,"volM3s":0.04421120000000001,"volM3h":159.16032000000004,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":10,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.55,"volM3s":0.04421120000000001,"volM3h":159.16032000000004,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":11,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.53,"volM3s":0.042603520000000006,"volM3h":153.37267200000002,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":12,"dia":0.32,"shape":"Round","area":0.08038400000000001,"staticP":null,"velocity":0.51,"volM3s":0.040995840000000006,"volM3h":147.58502400000003,"commStaticP":null,"commVelocity":0.5,"commVol":null}]},"LEV002":{"System ID:":"QC fume hood","Location of LEV:":"QC Fume hood","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-20","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control the airborne concentration of toxic substances during lab tests.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"acetonitrile is is toxic if swallowed, is toxic in contact with skin, is toxic if inhaled, causes severe skin burns and eye damage, may cause cancer.\nMethanol is toxic if swallowed, is toxic in contact with skin, is toxic if inhaled, causes damage to organs.","Are the substances flammable:":"Yes","Are the substances explosive:":"Yes","Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Sasa","Motor size":"Not available","Model":"Not available","Full load current":"Not available","Serial number":"Not available","Motor speed (approx)":"Not available","Type of impeller":"backward curve","Impeller speed (approx)":"Not available","Condition of fan":"No unsual noise/vibration","Impeller direction of rotation":"Not able to test","Type of drive":"Belt drive","Differential pressure:":"Not able to test","Filter type":"Not available","Filter media type":"Not available","Filtration area":"Not available","Condition of filter media":"Not able to check","Differential Pressure":"Not able to test","Condition of filter":"Not able to check","Suitability of position of unit":"on the outer wall behind the QC lab","Condition of duct":"Rectangular, stainless steel, some sign of rust","Suitability of ductwork":"OK","Type of stack/discharge":"discharge located on the outer wall behind the QC lab","Suitability of discharge":"not suitable","Is there adequate make up air":"Yes. Fresh air blower bring fresh air into the area.","Are there any induced drafts":"No. Air conditioning system ceiling air diffuser was not operating.","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"Yes","actions_identified":[{"id":1,"action":"Check design of the system, to make sure that the designed face velocity of 0.5 m/s can be achieved at full sash height","priority":"2. Normal"},{"id":2,"action":"Educate the the user of the fume hood to position items away from the sash opening, to prevent disturbance of air flow","priority":"3. Routine"},{"id":3,"action":"Conduct preventive maintenance on the rusty duct","priority":"2. Normal"},{"id":1,"action":"full sash height","priority":null},{"id":2,"action":"working sash height","priority":null}],"duct":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":"1.12, 0.565","shape":"Rectangle","area":0.6328,"staticP":null,"velocity":0.52,"volM3s":0.329056,"volM3h":1184.6016,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":2,"dia":"1.12, 0.2","shape":"Rectangle","area":0.22400000000000003,"staticP":null,"velocity":0.51,"volM3s":0.11424000000000002,"volM3h":411.26400000000007,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV003":{"System ID:":"SC formulation Dust collector","Location of LEV:":"SC formulation Dust collector","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-22","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"Control dust exposure during the charging activities when formulating SC products.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"May cause an allergic skin reaction, Toxic if swallowed or if inhaled","Are the substances flammable:":"No","Are the substances explosive:":"No","Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Donaldson","Motor size":"5.5 KW","Model":"G8","Full load current":"Not available","Serial number":"Not available","Motor speed (approx)":"Not available","Type of impeller":"Backward curve","Impeller speed (approx)":"Not available","Condition of fan":"no unusual noise/vibration","Impeller direction of rotation":"Not able to check","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Donaldson Torit DCE","Filter media type":"Polyester","Filtration area":"20 m2","Condition of filter media":"Laden with dust","Differential Pressure":"Not able to test","Condition of filter":"OK","Suitability of position of unit":"suitable","Condition of duct":"round GI duct with flexible duct sections. One point of the flexible duct connected to 400L Gel Vessel  was kirked.","Suitability of ductwork":"Suitable","Type of stack/discharge":"direct discharge at the side of the dust collector","Suitability of discharge":"Not suitable","Is there adequate make up air":"Yes","Are there any induced drafts":"No","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Reassess the design of the LEV system to ensure that it achieves sufficient duct velocity and effective performance.","priority":"1. High"}],"duct":[{"id":1,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":1746,"velocityP":97.25,"totalP":1843.25,"velocity":12.721388485538833,"volM3s":0.10308407730134773,"volM3h":371.10267828485183,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":2,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":2253,"velocityP":32.55,"totalP":2285.55,"velocity":7.3597863420074905,"volM3s":0.13418525551613397,"volM3h":483.0669198580823,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV004":{"System ID:":"EC Formulation Dust Collector","Location of LEV:":"EC Formulation Dust Collector","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-19","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"Control dust exposure during the charging activities when formulating EC products.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"Difenoconazole is harmful if swallowed, causes serious eye irritation and is suspected of causing cancer.\nPenconazole is harmful if swallowed and is suspected of damaging the unborn child.\nLufenuron may cause an allergic skin reaction.\nLambda Cyhalothrin is fatal if inhaled, is toxic if swallowed, and is harmful in contact with skin.","Are the substances flammable:":"Yes","Are the substances explosive:":"Yes","Fan type":"Centrifugal","Electrical supply":"DC","Manufacturer":"Donaldson","Motor size":"5.5 kw","Model":"K10","Full load current":"Not available","Serial number":"Not available","Motor speed (approx)":"3000 RPM","Type of impeller":"backward curve","Impeller speed (approx)":"Not available","Condition of fan":"no unusual noise/vibration","Impeller direction of rotation":"Clockwise","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Donaldson Torit DCE","Filter media type":"Polyester","Filtration area":"30 m2","Condition of filter media":"Not able to check","Differential Pressure":"141 pa","Condition of filter":"There was dust deposited on the motor and it may indicate leakage.","Suitability of position of unit":"Suitable","Condition of duct":"Round GI duct","Suitability of ductwork":"Suitable","Type of stack/discharge":"Direct discharge at the side of the dust collector","Suitability of discharge":"Not suitable","Is there adequate make up air":"Yes","Are there any induced drafts":"No","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Reassess the design of the LEV system to ensure that it achieves sufficient duct velocity and effective performance.","priority":"1. High"},{"id":2,"action":"Reassess the design of the hood to make sure effective vapture of dust can be achieved (face velocity is different from capture velocity)","priority":"1. High"},{"id":3,"action":"Evalute the integrity of the fitler unit to make sure there is no leakage","priority":"1. High"},{"id":1,"action":"non-uniform distribution of face velocity","priority":null}],"duct":[{"id":1,"dia":0.254,"shape":"Round","area":0.050645060000000006,"staticP":141,"velocityP":34.35,"totalP":175.35,"velocity":7.560544623239784,"volM3s":0.3829042360766563,"volM3h":1378.4552498759626,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":2,"dia":0.254,"shape":"Round","area":0.050645060000000006,"staticP":74,"velocityP":36.3,"totalP":110.3,"velocity":7.772183090998307,"volM3s":0.39362267897459474,"volM3h":1417.041644308541,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":"1.02, 1.02","shape":"Square","area":1.0404,"staticP":null,"velocity":0.405,"volM3s":0.421362,"volM3h":1516.9032,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV005":{"System ID:":"Insecticide LEV","Location of LEV:":"Insecticide LEV","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-21","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control vapor emission from the EC FF&P (formulation, filling and packing) and SC FF&P processes.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"Propiconazole may damage the unborn child, is harmful if swallowed and may cause an allergic skin reaction.\nProfenofos is harmful if swallowed, is harmful in contact with skin and is harmful if inhaled.\nThiamethoxam is harmful if swallowed and is suspected of damaging fertility and the unborn child.\nCypermethrin is toxic if swallowed, is toxic if inhaled, may cause damage to organs, is harmful in contact with skin, is suspected of damaging fertility or the unborn child, may cause respiratory irritation, may cause an allergic skin reaction and causes skin irritation.\nEmamectin Benzoate is toxic if swallowed, is toxic in contact with skin, is toxic if inhaled, causes damage to organs and causes serious eye damage.","Are the substances flammable:":"Yes","Are the substances explosive:":"Yes","Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Not Available","Motor size":"5.5 HP, 11 KW","Model":"EL524555","Full load current":"9.9 A","Serial number":"17-A","Motor speed (approx)":"2950 rpm","Type of impeller":"Forward curve","Impeller speed (approx)":"3000 rpm","Condition of fan":"No unusual noise / vibration","Impeller direction of rotation":"Clockwise","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Wet scrubber","Filter media type":"Water (pH 11)","Filtration area":"Not available","Condition of filter media":"Not available","Differential Pressure":"Not able to test","Condition of filter":"Good","Suitability of position of unit":"Suitable","Condition of duct":"one section of the duct was rusty","Suitability of ductwork":"suitable","Type of stack/discharge":"vertical offset discharge with rain cap","Suitability of discharge":"rain cap was not a good feature for discharge stack","Is there adequate make up air":"Yes, the area is open to ambient","Are there any induced drafts":"No","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Reassess the design of the LEV system to ensure that it achieves sufficient duct velocity and effective performance.","priority":"1. High"},{"id":2,"action":"Design the stack to allow sufficient disperse of the exhausted air","priority":"1. High"},{"id":3,"action":"Make sure the size of the wet scrubber is big enough to handle the volume","priority":"1. High"},{"id":4,"action":"Conduct preventive maintenance on the rusty duct","priority":"2. Normal"}],"duct":[{"id":3,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":424,"velocityP":39.58,"totalP":463.58,"velocity":8.11573028137333,"volM3s":0.036991948233957225,"volM3h":133.171013642246,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":2,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":23,"velocityP":8.25,"totalP":31.25,"velocity":3.7052429070170287,"volM3s":0.01688870244064067,"volM3h":60.799328786306404,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":1,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":4,"velocityP":1.08,"totalP":5.08,"velocity":1.3406073250583113,"volM3s":0.006110562457261591,"volM3h":21.99802484614173,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":5,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":121,"velocityP":73,"totalP":194,"velocity":11.021764831459615,"volM3s":0.05023781470756459,"volM3h":180.8561329472325,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":4,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":69,"velocityP":34.83,"totalP":103.83,"velocity":7.6131861267146235,"volM3s":0.034701324136076676,"volM3h":124.92476688987604,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":6,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":315,"velocityP":185.58,"totalP":500.58000000000004,"velocity":17.573379811521743,"volM3s":0.08010043874615767,"volM3h":288.3615794861676,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":7,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":90,"velocityP":52.92,"totalP":142.92000000000002,"velocity":9.384251275408177,"volM3s":0.04277393720083113,"volM3h":153.98617392299207,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":8,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":953,"velocityP":379.25,"totalP":1332.25,"velocity":25.121901301454077,"volM3s":0.20356803179619515,"volM3h":732.8449144663025,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":9,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":126,"velocityP":30.75,"totalP":156.75,"velocity":7.153396046634074,"volM3s":0.0326055754786991,"volM3h":117.38007172331676,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":10,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":1516,"velocityP":72.05,"totalP":1588.05,"velocity":10.949813012102078,"volM3s":0.1996394173152086,"volM3h":718.7019023347509,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":11,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":1525,"velocityP":4.75,"totalP":1529.75,"velocity":2.811489818583735,"volM3s":0.051259705398562457,"volM3h":184.53493943482485,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":13,"dia":10,"shape":"Round","area":78.5,"staticP":1160,"velocityP":12.65,"totalP":1172.65,"velocity":4.588122164894915,"volM3s":360.16758994425084,"volM3h":1296603.323799303,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":14,"dia":null,"shape":"Round","area":0,"staticP":1988,"velocityP":null,"totalP":1988,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":12,"dia":0.2032,"shape":"Round","area":0.0324128384,"staticP":1716,"velocityP":27.8,"totalP":1743.8,"velocity":6.801615984455459,"volM3s":0.2204596797630117,"volM3h":793.6548471468421,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":15,"dia":0.254,"shape":"Round","area":0.050645060000000006,"staticP":1117,"velocityP":9.7,"totalP":1126.7,"velocity":4.017682167618538,"volM3s":0.20347575443997096,"volM3h":732.5127159838954,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":16,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":1697,"velocityP":24.3,"totalP":1721.3,"velocity":6.359058892634979,"volM3s":0.11593977089797156,"volM3h":417.3831752326976,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":17,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":1690,"velocityP":24.9,"totalP":1714.9,"velocity":6.437087074135319,"volM3s":0.11736239799413077,"volM3h":422.50463277887076,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":18,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":1356,"velocityP":69.33,"totalP":1425.33,"velocity":10.741138347493715,"volM3s":0.048958703646940806,"volM3h":176.25133312898691,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":19,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":838,"velocityP":61.58,"totalP":899.58,"velocity":10.123007359475741,"volM3s":0.046141228359098146,"volM3h":166.10842209275333,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":22,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":3,"velocityP":0,"totalP":3,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":21,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":11,"velocityP":2.25,"totalP":13.25,"velocity":1.935,"volM3s":0.015679710576,"volM3h":56.4469580736,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":20,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":51,"velocityP":10.42,"totalP":61.42,"velocity":4.164123197024795,"volM3s":0.01898030422446413,"volM3h":68.32909520807087,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":23,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":312,"velocityP":182.67,"totalP":494.66999999999996,"velocity":17.435055118926353,"volM3s":0.14127990601621315,"volM3h":508.60766165836736,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":24,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":560,"velocityP":69.75,"totalP":629.75,"velocity":10.773624042076094,"volM3s":0.0873009337645418,"volM3h":314.28336155235047,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":25,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":855,"velocityP":37.5,"totalP":892.5,"velocity":7.899604420475749,"volM3s":0.14402733834645345,"volM3h":518.4984180472325,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":26,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":905,"velocityP":5.17,"totalP":910.17,"velocity":2.9331547862327345,"volM3s":0.02376796802208704,"volM3h":85.56468487951335,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":27,"dia":0.0508,"shape":"Round","area":0.0020258024,"staticP":741,"velocityP":9.33,"totalP":750.33,"velocity":3.940311282119726,"volM3s":0.007982292052065217,"volM3h":28.73625138743478,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null}],"hood":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV006":{"System ID:":"Herbicide LEV","Location of LEV:":"Herbicide LEV","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-23","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control gas/vapor exposure during the formulation, filling and packing of herbicides products.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"S-metolachlor may cause an allergic skin reaction.\nFluazifop-p-butyl is suspected of damaging the unborn child.\nPretilachlor is toxic if inhaled, causes skin irritation and may cause an allergic skin reaction.\nPinoxaden is harmful if swallowed, causes serious eye irritation, is harmful if inhaled, is suspected of damaging the unborn child, may cause an allergic skin reaction and may cause respiratory irritation.","Are the substances flammable:":"Yes","Are the substances explosive:":"Yes","Fan type":"Centrifugal fan","Electrical supply":"AC","Manufacturer":"Not available","Motor size":"4 kw","Model":"B4-72","Full load current":"3.2A","Serial number":"Not available","Motor speed (approx)":"2900 rpm","Type of impeller":"Backward curve","Impeller speed (approx)":"Not available","Condition of fan":"no unusual noise/vibration","Impeller direction of rotation":"Clockwise","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Wet scrubber","Filter media type":"Water (pH 11)","Filtration area":"Not available","Condition of filter media":"OK","Differential Pressure":"Not able to check","Condition of filter":"OK","Suitability of position of unit":"Suitable","Condition of duct":"Round GI steel. there are some worn-out of duct (refer to pictures below)","Suitability of ductwork":"suitable","Type of stack/discharge":"vertical stack with rain cap","Suitability of discharge":"rain cap was not a good feature for discharge stack","Is there adequate make up air":"Yes, the area is open to ambient","Are there any induced drafts":"No","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Reassess the design of the LEV system to ensure that it achieves sufficient duct velocity and effective performance.","priority":"1. High"},{"id":2,"action":"Conduct regular visual inspections to identify any signs of wear and tear, ensuring timely repairs.","priority":"3. Routine"},{"id":3,"action":"Repair any damaged or worn-out duct components","priority":"1. High"},{"id":4,"action":"Design the stack to allow sufficient disperse of the exhausted air","priority":"1. High"}],"duct":[{"id":1,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":327,"velocityP":2,"totalP":329,"velocity":1.8243354954612927,"volM3s":0.014782972900442703,"volM3h":53.218702441593734,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":2,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":93,"velocityP":61,"totalP":154,"velocity":10.075222081919584,"volM3s":0.045923420416692805,"volM3h":165.3243135000941,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":3,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":304,"velocityP":37.17,"totalP":341.17,"velocity":7.8647693545329105,"volM3s":0.035848054426183246,"volM3h":129.05299593425968,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":4,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":428,"velocityP":10.1,"totalP":438.1,"velocity":4.099684134174241,"volM3s":0.0747463496242689,"volM3h":269.08685864736805,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":5,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":493,"velocityP":28.15,"totalP":521.15,"velocity":6.844297991759271,"volM3s":0.12478675768219001,"volM3h":449.23232765588403,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":6,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":440,"velocityP":6.35,"totalP":446.35,"velocity":3.2506976174353714,"volM3s":0.05926743931567372,"volM3h":213.3627815364254,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":11,"dia":0.254,"shape":"Round","area":0.050645060000000006,"staticP":510,"velocityP":19.65,"totalP":529.65,"velocity":5.718353346899788,"volM3s":0.2896063483549406,"volM3h":1042.5828540777861,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":12,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":441,"velocityP":6.42,"totalP":447.42,"velocity":3.2685657405045414,"volM3s":0.014898303723761724,"volM3h":53.63389340554221,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":13,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":313,"velocityP":17.75,"totalP":330.75,"velocity":5.434866603698752,"volM3s":0.024772423071268757,"volM3h":89.18072305656753,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":14,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":446,"velocityP":4.25,"totalP":450.25,"velocity":2.6594031285233912,"volM3s":0.012121706790742938,"volM3h":43.63814444667457,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":7,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":208,"velocityP":11.33,"totalP":219.33,"velocity":4.342148431364364,"volM3s":0.03518533885365665,"volM3h":126.66721987316393,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":8,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":215,"velocityP":17.58,"totalP":232.57999999999998,"velocity":5.40877786565505,"volM3s":0.043828460725243504,"volM3h":157.7824586108766,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":9,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":83,"velocityP":55.25,"totalP":138.25,"velocity":9.588614342020437,"volM3s":0.0437054353801637,"volM3h":157.33956736858931,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":10,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":130,"velocityP":59.42,"totalP":189.42000000000002,"velocity":9.94388364775051,"volM3s":0.08057737343573496,"volM3h":290.07854436864585,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null}],"hood":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV007":{"System ID:":"New SC/LEV","Location of LEV:":"New SC/LEV","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-19","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control gas/vapor exposure during the filling and packing of products, i.e. Polo, Solvigo, Amistar Top, Folio Gold, Miravis Duo, Ampligo, Revus, Volaim Flexi, and Isabion.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"Diafenthiuron is toxic if inhaled, and may cause damage to organs through prolonged or repeated exposure.\nAbamectin is fatal if swallowed, is fatal if inhaled, causes damage to organs through prolonged or repeated exposure, and is suspected of damaging the unborn child.\nThiamethoxam is harmful if swallowed and is suspected of damaging fertility and the unborn child.\ndifenoconazole is harmful if swallowed, causes serious eye irritation and is suspected of causing cancer.\nazoxystrobin is toxic if inhaled.\nmetalaxyl-M is harmful if swallowed and causes serious eye damage.\nchlorothalonil is fatal if inhaled, causes serious eye damage, is suspected of causing cancer, may cause an allergic skin reaction and may cause respiratory irritation.\ndifenoconazole is harmful if swallowed, causes serious eye irritation and is suspected of causing cancer.\npydiflumetofen is suspected of causing cancer and is suspected of damaging fertility.\nchlorantraniliprole causes serious eye irritation and may cause respiratory irritation.\nLambda Cyhalothrin is fatal if inhaled, is toxic if swallowed, and is harmful in contact with skin.\nchlorantraniliprole causes serious eye irritation and may cause respiratory irritation.","Are the substances flammable:":"No","Are the substances explosive:":"No","Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Not Available","Motor size":"2.2 kw","Model":"OCV3094A","Full load current":"7.3 / 14.2 Amp","Serial number":"OCV3094A","Motor speed (approx)":"2910 rpm","Type of impeller":"Backward curve","Impeller speed (approx)":"Not available","Condition of fan":"No unusual noise/vibration","Impeller direction of rotation":"counterclock wise","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Wet scrubber","Filter media type":"Water","Filtration area":"Not available","Condition of filter media":"ok","Differential Pressure":"Not able to test","Condition of filter":"ok","Suitability of position of unit":"suitable","Condition of duct":"gap was observed at the connection between the rigid duct and flexible duct","Suitability of ductwork":"suitable","Type of stack/discharge":"Vertical offset stack, with rain cap","Suitability of discharge":"rain cap was not a good feature for discharge stack","Is there adequate make up air":"Yes","Are there any induced drafts":"No","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Reassess the design of the LEV system to ensure that it achieves sufficient duct velocity and effective performance.","priority":"1. High"},{"id":2,"action":"Design the stack to allow sufficient disperse of the exhausted air","priority":"1. High"},{"id":3,"action":"Conduct check the the integrity of the duct, joints and repair/replace any worn-outs or damages","priority":"3. Routine"},{"id":4,"action":"Reassess the wet scrubber design to prevent water over flow into the LEV duct branch","priority":"1. High"}],"duct":[{"id":1,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":179,"velocityP":103.75,"totalP":282.75,"velocity":13.139648967913867,"volM3s":0.10647332965742974,"volM3h":383.3039867667471,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":2,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":209,"velocityP":7.5,"totalP":216.5,"velocity":3.5328104959083215,"volM3s":0.06441098383220642,"volM3h":231.8795417959431,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":3,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":142,"velocityP":35.67,"totalP":177.67000000000002,"velocity":7.704443328365782,"volM3s":0.062430719141069554,"volM3h":224.75058890785039,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":4,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":114,"velocityP":13.92,"totalP":127.92,"velocity":4.812927591393828,"volM3s":0.03900016106268735,"volM3h":140.40057982567444,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":5,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":959,"velocityP":213.83,"totalP":1172.83,"velocity":18.86357609256527,"volM3s":0.34392489948811217,"volM3h":1238.1296381572038,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":6,"dia":0.1524,"shape":"Round","area":0.0182322216,"staticP":413,"velocityP":98.3,"totalP":511.3,"velocity":12.789879983799691,"volM3s":0.2331879261020404,"volM3h":839.4765339673454,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":7,"dia":0.0508,"shape":"Round","area":0.0020258024,"staticP":140,"velocityP":65.67,"totalP":205.67000000000002,"velocity":10.453776685963787,"volM3s":0.021177285899489483,"volM3h":76.23822923816213,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":8,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":313,"velocityP":42,"totalP":355,"velocity":8.36015550094614,"volM3s":0.06774409231275957,"volM3h":243.87873232593446,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null}],"hood":[{"id":1,"dia":0.12,"shape":null,"area":null,"staticP":null,"velocity":9.811,"volM3s":0.073,"volM3h":263,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":0.12,"shape":null,"area":null,"staticP":null,"velocity":12.63,"volM3s":0.094,"volM3h":339,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":0.15,"shape":null,"area":null,"staticP":null,"velocity":3.026,"volM3s":0.03,"volM3h":117,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":0.05,"shape":null,"area":null,"staticP":null,"velocity":7.538,"volM3s":0.008,"volM3h":32,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":0.05,"shape":null,"area":null,"staticP":null,"velocity":7.513,"volM3s":0.008,"volM3h":32,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":0.05,"shape":null,"area":null,"staticP":null,"velocity":4.766,"volM3s":0.01,"volM3h":46,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":0.12,"shape":null,"area":null,"staticP":null,"velocity":9.303,"volM3s":0.06,"volM3h":250,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":0.12,"shape":null,"area":null,"staticP":null,"velocity":6.614,"volM3s":0.04,"volM3h":178,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV008":{"System ID:":"Logran Dust Collector","Location of LEV:":"Logran Dust Collector","Site Name:":"Syngenta Pakistan Limited","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan","Test Conducted By:":"Not tested this cycle","Status of the process at time of test:":"Decommissioned","Commissioning Report:":"No","User Manual:":"No","actions_identified":[],"duct":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":0.0635,"shape":null,"area":null,"staticP":null,"velocity":2.66,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":"0.1 to 0.5","commVol":null},{"id":2,"dia":0.0635,"shape":null,"area":null,"staticP":null,"velocity":2.1,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":"0.1 to 0.5","commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV009":{"System ID:":"Actara Dust Collector","Location of LEV:":"Actara Dust Collector","Site Name:":"Syngenta Pakistan Limited","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan","Test Conducted By:":"Not tested this cycle","Status of the process at time of test:":"Decommissioned","Commissioning Report:":"No","User Manual:":"No","actions_identified":[],"duct":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":0.305,"shape":null,"area":null,"staticP":null,"velocity":2.13,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":"0.5 to 1.0","commVol":null},{"id":2,"dia":0.15,"shape":null,"area":null,"staticP":null,"velocity":1.16,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":"0.5 to 1.0","commVol":null},{"id":3,"dia":0.15,"shape":null,"area":null,"staticP":null,"velocity":6.59,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":"0.5 to 1.0","commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV010":{"System ID:":"New Virtako","Location of LEV:":"New Virtako","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-22","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control dust emission/exposure for the Virtako production line","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"irritation of respiratory tract, lung cancer","Are the substances flammable:":"No","Are the substances explosive:":"No","Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Sasa Metal Industries","Motor size":"25 HP","Model":"BC","Full load current":"Not Available","Serial number":"Not available","Motor speed (approx)":"3530 RPM","Type of impeller":"Forward curve","Impeller speed (approx)":"2900 RPM","Condition of fan":"no unsual noise/vibration","Impeller direction of rotation":"Clockwise","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Bag filter","Filter media type":"Polyester","Filtration area":"Not available","Condition of filter media":"Not able to check","Differential Pressure":2363,"Condition of filter":"Good","Suitability of position of unit":"OK","Condition of duct":"Good, Round Gavanised Iron (GI) steel","Suitability of ductwork":"Suitable","Type of stack/discharge":"Vertical discharge, with rain cap","Suitability of discharge":"rain cap was not a good feature for discharge stack","Is there adequate make up air":"Yes. Open doors and windows","Are there any induced drafts":"Yes, Mechanical fan blowing towards the charging hopper from the side","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Reassess the design of the LEV system to ensure that it achieves sufficient duct velocity and effective performance.","priority":"1. High"},{"id":2,"action":"Evaluate the design of the process to consider possibility of closing the joints between different parts of the process","priority":"1. High"},{"id":3,"action":"Design the stack to allow sufficient disperse of the exhausted air","priority":"1. High"},{"id":4,"action":"Carry out a thorough spring cleaning of the area to remove any accumulated dust and prevent its resuspension. The cleaning should be done using a vacuum method instead of a broom to minimize the release of dust particles into the air during the process.","priority":"2. Normal"},{"id":5,"action":"Hood (fixed position) should be located close to the emission source to ensure effective dust capture","priority":"1. High"},{"id":1,"action":"buffer silo infeed","priority":null},{"id":4,"action":"Storage vessel discharge 1","priority":null},{"id":5,"action":"Storage vessel discharge 2","priority":null}],"duct":[{"id":5,"dia":0.25,"shape":"Round","area":0.0490625,"staticP":461,"velocityP":50,"totalP":511,"velocity":15.2,"volM3s":0.74575,"volM3h":2684.7000000000003,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":3,"dia":0.2,"shape":"Round","area":0.031400000000000004,"staticP":500,"velocityP":107,"totalP":607,"velocity":13.343863758297296,"volM3s":0.41899732201053513,"volM3h":1508.3903592379265,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":4,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":303,"velocityP":88,"totalP":391,"velocity":14.3,"volM3s":0.18971095000000004,"volM3h":682.9594200000001,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":2,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":287,"velocityP":54,"totalP":341,"velocity":14.6,"volM3s":0.19369090000000003,"volM3h":697.2872400000001,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":1,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":445,"velocityP":4,"totalP":449,"velocity":13.9,"volM3s":0.18440435000000002,"volM3h":663.8556600000001,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":6,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":482,"velocityP":2.5,"totalP":484.5,"velocity":13.45,"volM3s":0.178434425,"volM3h":642.36393,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":11,"dia":0.25,"shape":"Round","area":0.0490625,"staticP":525,"velocityP":50,"totalP":575,"velocity":13.67,"volM3s":0.670684375,"volM3h":2414.46375,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":10,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":432,"velocityP":109,"totalP":541,"velocity":13.467995396494612,"volM3s":0.1786731609275958,"volM3h":643.2233793393449,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":9,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":203,"velocityP":2.5,"totalP":205.5,"velocity":14.01,"volM3s":0.18586366500000004,"volM3h":669.1091940000001,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":7,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":350,"velocityP":128,"totalP":478,"velocity":14.594683963690342,"volM3s":0.19362037480429795,"volM3h":697.0333492954726,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":8,"dia":0.3,"shape":"Round","area":0.07065,"staticP":701,"velocityP":161,"totalP":862,"velocity":16.36826502717988,"volM3s":1.1564179241702586,"volM3h":4163.104527012931,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":14,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":525,"velocityP":46,"totalP":571,"velocity":16.2,"volM3s":0.21491730000000003,"volM3h":773.7022800000001,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":12,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":467,"velocityP":196,"totalP":663,"velocity":18.060000000000002,"volM3s":0.23959299000000006,"volM3h":862.5347640000002,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":13,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":181,"velocityP":88,"totalP":269,"velocity":17.13,"volM3s":0.22725514500000002,"volM3h":818.1185220000001,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":15,"dia":0.13,"shape":"Round","area":0.013266500000000002,"staticP":31,"velocityP":24,"totalP":55,"velocity":16.3,"volM3s":0.21624395000000005,"volM3h":778.4782200000002,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null}],"hood":[{"id":1,"dia":"0.76, 0.58","shape":"Rectangle","area":0.44079999999999997,"staticP":null,"velocity":0.113,"volM3s":0.0498104,"volM3h":179.31744,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":2,"dia":"0.76, 0.58","shape":"Rectangle","area":0.44079999999999997,"staticP":null,"velocity":0.22,"volM3s":0.09697599999999999,"volM3h":349.11359999999996,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":3,"dia":"0.76, 0.58","shape":"Rectangle","area":0.44079999999999997,"staticP":null,"velocity":0.377,"volM3s":0.16618159999999998,"volM3h":598.2537599999999,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":4,"dia":"0.76, 0.58","shape":"Rectangle","area":0.44079999999999997,"staticP":null,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":5,"dia":"0.76, 0.58","shape":"Rectangle","area":0.44079999999999997,"staticP":null,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":6,"dia":"0.76, 0.59","shape":"Rectangle","area":0.44839999999999997,"staticP":null,"velocity":0.875,"volM3s":0.39235,"volM3h":1412.4599999999998,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":7,"dia":"0.76, 0.62","shape":"Rectangle","area":0.4712,"staticP":null,"velocity":0.14,"volM3s":0.06596800000000001,"volM3h":237.48480000000004,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":8,"dia":"0.76, 0.58","shape":"Rectangle","area":0.44079999999999997,"staticP":null,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":0.5,"commVol":null},{"id":9,"dia":"0.76, 0.58","shape":"Rectangle","area":0.44079999999999997,"staticP":null,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":0.5,"commVol":null}]},"LEV011":{"System ID:":"SMOC LEV","Location of LEV:":"SMOC LEV","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-21","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control and treat any release of vapors from the SMOC tanks during the loading of the tanks, and unloading accessories cabinet.","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":null,"Are the substances flammable:":null,"Are the substances explosive:":null,"Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Tatung Co. (motor)","Motor size":"2 hp","Model":"EBFC (motor)","Full load current":"Not Available","Serial number":"2202w21504 (motor)","Motor speed (approx)":"3430 / 2960 rpm","Type of impeller":"Backward curve","Impeller speed (approx)":"Not available","Condition of fan":"No unsual noise/vibration","Impeller direction of rotation":"Counterclockwise","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Wet scrubber","Filter media type":"water (pH 11)","Filtration area":"Not available","Condition of filter media":"Ok","Differential Pressure":"Not able to test","Condition of filter":"Ok","Suitability of position of unit":"Yes","Condition of duct":"PVC, there is a open end between the two tanks and it is only blocked with cloth","Suitability of ductwork":"suitable","Type of stack/discharge":"goose neck discharge","Suitability of discharge":"the design of the discharge is not good to disperse the exhausted air","Is there adequate make up air":"yes, open to ambient","Are there any induced drafts":"No","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"Yes","actions_identified":[{"id":1,"action":"Design the stack to allow sufficient disperse of the exhausted air","priority":"1. High"},{"id":2,"action":"Seal any unused end properly to prevent leakge","priority":"1. High"}],"duct":[{"id":1,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":185,"velocityP":52.75,"totalP":237.75,"velocity":9.369166184885398,"volM3s":0.042705178522514285,"volM3h":153.73864268105143,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":2,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":84,"velocityP":21.42,"totalP":105.42,"velocity":5.970345216149566,"volM3s":0.027213164252334696,"volM3h":97.96739130840491,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":6,"commVol":null},{"id":3,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":31,"velocityP":6.58,"totalP":37.58,"velocity":3.3090448773022105,"volM3s":0.015082809871829679,"volM3h":54.29811553858684,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":56,"velocityP":0,"totalP":56,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":66,"velocityP":0,"totalP":66,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":0.0762,"shape":"Round","area":0.0045580554,"staticP":51,"velocityP":0,"totalP":51,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV012":{"System ID:":"Old Virtako","Location of LEV:":"Old Virtako","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":"IEH (Institute of ergonomics and hygiene) Pte Ltd","Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":"2 Leng Kee Road, Thye Hong Centre, 03-10, Singapore 159086","Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"2024-08-22","Date of last test:":"Not available","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"No","Commissioning Report:":"No","MSDS Sheets:":"Yes","User Manual:":"No","Log Book:":"No","The purpose of this system is to:":"control dust exposure during charging activity of the Old virtako line","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"irritation of respiratory tract","Are the substances flammable:":"No","Are the substances explosive:":"No","Fan type":"Centrifugal","Electrical supply":"AC","Manufacturer":"Not available","Motor size":"Not available","Model":"Not available","Full load current":"Not available","Serial number":"Not available","Motor speed (approx)":"Not available","Type of impeller":"Backward curve","Impeller speed (approx)":"Not available","Condition of fan":"No unusual noise/vibration","Impeller direction of rotation":"Counterclockwise","Type of drive":"Direct","Differential pressure:":"Not able to test","Filter type":"Dust collector","Filter media type":"Woven fabric","Filtration area":"20 sleevs/columns","Condition of filter media":"Not able to check","Differential Pressure":"Not able to check","Condition of filter":"Door was not properly closed.","Suitability of position of unit":"Suitable","Condition of duct":"Round PVC duct, broken at one location. Rusty duct towards the dust collector","Suitability of ductwork":"suitable","Type of stack/discharge":"goose neck discharge, rusty","Suitability of discharge":"the design of the discharge is not good to disperse the exhausted air","Is there adequate make up air":"Yes","Are there any induced drafts":"There is mechanical fan near the raw material charging point","Equipment used for assessment":"TSI LCA301 Rotating vane anemometer (0257638), Center 332 Hot wire anemometer (230204431), CEM DT-8920 Pressure/Flow meter (210922189), Gastec smoke tester tube (Part number 810-501)","Is the system still maintaining satisfactory performance?":"No","actions_identified":[{"id":1,"action":"Conduct regular inspection and repair broken duct","priority":"1. High"},{"id":2,"action":"Design the stack to allow sufficient disperse of the exhausted air","priority":"1. High"},{"id":3,"action":"Reassess the design of the LEV system to ensure that it achieves sufficient duct velocity and effective performance.","priority":"1. High"},{"id":4,"action":"Perform preventive maintenance on the rusted duct to prevent further deterioration and ensure optimal performance","priority":"3. Routine"},{"id":1,"action":"the end of this section of the pipe is sealed, no flow should be detected.","priority":null}],"duct":[{"id":1,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":0,"velocityP":0,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":0,"commVol":null},{"id":2,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":467,"velocityP":8.17,"totalP":475.17,"velocity":3.6872343294127647,"volM3s":0.029878432615547075,"volM3h":107.56235741596947,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":3,"dia":0.1016,"shape":"Round","area":0.0081032096,"staticP":497,"velocityP":12.17,"totalP":509.17,"velocity":4.5002329939682015,"volM3s":0.03646633119895987,"volM3h":131.27879231625553,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":17.5,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]},"LEV013":{"System ID:":"Manual Powder","Location of LEV:":"Dust Collector For Manual Packing of Powder","Site Name:":"Syngenta Pakistan Limited","Test Conducted By:":null,"Site Address:":"Syngenta Pakistan Limited\nS-50 S.I.T.E, Hawksbay Road,\nKarachi, Pakistan ","Address:":null,"Purpose of test:":"To check the compliance of the LEV system","Date of this test:":"-","Date of last test:":"19-01-2025","Test frequency:":"Annual","Have the materials processes changed:":"No","Have the work procedures changed:":"No","Has the system layout changed:":"Yes","Commissioning Report:":"Yes","MSDS Sheets:":"Yes","User Manual:":"Yes","Log Book:":"No","The purpose of this system is to:":"To control the dust collection from Manual Powder Packing area","Status of the process at time of test:":"Fully Operational","Potential health effects from breathing in the substance(s):":"irritation of respiratory tract","Are the substances flammable:":"No","Are the substances explosive:":"No","Fan type":"Centrifugal","Electrical supply":"220V 50HZ","Manufacturer":"Jiangsu","Motor size":"220V 50HZ 550W","Model":"-","Full load current":"-","Serial number":"-","Motor speed (approx)":"-","Type of impeller":"SS304","Impeller speed (approx)":"-","Condition of fan":"-","Impeller direction of rotation":"-","Type of drive":"-","Differential pressure:":"-","Filter type":"Dust collector","Filter media type":"Woven fabric","Filtration area":"20 sleevs/columns","Condition of filter media":"ok","Differential Pressure":"-","Condition of filter":"New","Suitability of position of unit":"-","Condition of duct":null,"Suitability of ductwork":null,"Type of stack/discharge":null,"Suitability of discharge":null,"Is there adequate make up air":null,"Are there any induced drafts":null,"Equipment used for assessment":null,"Is the system still maintaining satisfactory performance?":null,"actions_identified":[],"duct":[{"id":1,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":2,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocityP":null,"totalP":0,"velocity":0,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocityP":null,"commTotalP":null,"commVelocity":null,"commVol":null}],"hood":[{"id":1,"dia":0.0635,"shape":null,"area":null,"staticP":null,"velocity":2.41,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":"0.5 to 1.0","commVol":null},{"id":2,"dia":0.0635,"shape":null,"area":null,"staticP":null,"velocity":2.81,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":"0.5 to 1.0","commVol":null},{"id":3,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":4,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":5,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":6,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":7,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null},{"id":8,"dia":null,"shape":null,"area":null,"staticP":null,"velocity":null,"volM3s":0,"volM3h":0,"commStaticP":null,"commVelocity":null,"commVol":null}]}};
+  let DETAILS = {};
+  let currentLevId = null;
+
+  async function loadDetails(){
+    DETAILS = await waitForRef(detailsRef, JSON.parse(JSON.stringify(DEFAULT_DETAILS)));
+  }
+  async function persistDetails(){
+    saveState.textContent = 'Saving…';
+    try{
+      await detailsRef.set(DETAILS);
+      saveState.textContent = 'Saved · ' + new Date().toLocaleTimeString();
+    }catch(e){
+      saveState.textContent = 'Save failed — check your connection';
+    }
+  }
+
+  // ===== Editor identity (kept local to this browser, not shared) =====
+  const USER_KEY = 'lev-register:user';
+  let currentUser = 'Anonymous';
+  async function loadUser(){
+    try{
+      const res = await window.storage.get(USER_KEY, false);
+      currentUser = (res && res.value) ? res.value : 'Anonymous';
+    }catch(e){
+      currentUser = 'Anonymous';
+    }
+  }
+  async function persistUser(){
+    try{ await window.storage.set(USER_KEY, currentUser, false); }catch(e){}
+  }
+
+  // ===== Change log =====
+  let changeLog = [];
+  async function loadLog(){
+    changeLog = await waitForRef(logRef, []);
+    if(!Array.isArray(changeLog)) changeLog = Object.values(changeLog);
+  }
+  async function persistLog(){
+    try{ await logRef.set(changeLog); }catch(e){}
+  }
+
+  function fmtVal(v){
+    if(v===null || v===undefined || v==='') return '—';
+    return String(v);
+  }
+
+  function logChange(levId, area, field, oldVal, newVal){
+    const entry = {
+      ts: new Date().toISOString(),
+      levId, area, field,
+      oldVal: fmtVal(oldVal),
+      newVal: fmtVal(newVal),
+      user: currentUser || 'Anonymous',
+    };
+    changeLog.unshift(entry);
+    if(changeLog.length > 1000) changeLog.length = 1000;
+    persistLog();
+
+    // stamp the register row for this LEV with the latest update info
+    const row = data.find(r=>r.id===levId);
+    if(row){
+      row.lastUpdatedBy = entry.user;
+      row.lastUpdatedAt = entry.ts;
+    }
+  }
+
+  function fmtWhen(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const mins = Math.floor(diffMs/60000);
+    if(mins < 1) return 'just now';
+    if(mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins/60);
+    if(hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs/24);
+    if(days < 7) return days + 'd ago';
+    return d.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'});
+  }
+
+  let data = [];
+  const tbody = document.getElementById('tbody');
+  const kpisEl = document.getElementById('kpis');
+  const saveState = document.getElementById('saveState');
+  const filterStatus = document.getElementById('filterStatus');
+  const listView = document.getElementById('listView');
+  const detailView = document.getElementById('detailView');
+  const homeView = document.getElementById('homeView');
+  const logView = document.getElementById('logView');
+  let lastMainView = 'home';
+
+  // ===== Pass/Fail determined by average hood velocity, not exposure ratio =====
+  // Type is inferred from the location name; ranges follow standard ACGIH capture-velocity guidance.
+  const VELOCITY_RANGES = {
+    dust: { min: 1.0, max: 2.5, label: 'Dust Collector' },
+    lev:  { min: 0.5, max: 1.0, label: 'LEV / Fume System' },
+  };
+  function getSystemType(location){
+    return /dust\s*collector/i.test(location || '') ? 'dust' : 'lev';
+  }
+  function velocityRangeFor(location){
+    return VELOCITY_RANGES[getSystemType(location)];
+  }
+  function computeAvgHoodVelocity(levId){
+    const hood = (DETAILS[levId] && DETAILS[levId].hood) || [];
+    const vals = hood.map(r => r.velocity).filter(v => v !== null && v !== undefined && !isNaN(v) && v > 0);
+    if(!vals.length) return null;
+    const sum = vals.reduce((a,b) => a + Number(b), 0);
+    return +(sum / vals.length).toFixed(2);
+  }
+  function statusFromValue(v, location){
+    if(v === null || v === undefined || isNaN(v)) return 'PENDING';
+    const range = velocityRangeFor(location);
+    if(v < range.min) return 'FAIL';
+    if(v > range.max) return 'NEEDS_IMPROVEMENT';
+    return 'PASS';
+  }
+  function recalcRowFromHood(levId){
+    const row = data.find(r => r.id === levId);
+    if(!row) return false;
+    const avgHood = computeAvgHoodVelocity(levId);
+    const testResult = avgHood;
+    const newStatus = statusFromValue(avgHood, row.location);
+    const source = avgHood !== null ? 'hood' : 'none';
+    const changed = (row.testResult !== testResult) || (row.status !== newStatus) || (row.velocitySource !== source);
+    row.testResult = testResult;
+    row.status = newStatus;
+    row.velocitySource = source;
+    return changed;
+  }
+  function statusLabel(s){
+    return {PASS:'Pass', FAIL:'Fail', NEEDS_IMPROVEMENT:'Needs Improvement', PENDING:'Pending'}[s] || s;
+  }
+  function rowClass(s){
+    return {PASS:'row-pass', FAIL:'row-fail', NEEDS_IMPROVEMENT:'row-needs', PENDING:'row-pending'}[s] || '';
+  }
+
+  async function loadData(){
+    data = await waitForRef(registerRef, JSON.parse(JSON.stringify(defaultData)));
+    if(!Array.isArray(data)) data = Object.values(data);
+    await loadDetails();
+    await loadUser();
+    await loadLog();
+    FILES = await waitForRef(filesRef, {});
+
+    // Migrate/refresh: recalculate every system's status from hood velocity data now on file.
+    let anyChanged = false;
+    data.forEach(row => { if(recalcRowFromHood(row.id)) anyChanged = true; });
+    if(anyChanged) persist();
+
+    attachLiveListeners();
+    const nameInput = document.getElementById('editorNameInput');
+    if(nameInput && currentUser && currentUser !== 'Anonymous') nameInput.value = currentUser;
+    showRoleGate();
+  }
+
+  function refreshOpenDetailIfNeeded(){
+    if(detailView.style.display !== 'none' && currentLevId){
+      renderDetailPanels(currentLevId);
+    }
+  }
+
+  // Real-time sync: reflects other people's changes automatically without needing a manual refresh.
+  function attachLiveListeners(){
+    registerRef.on('value', snap => {
+      const v = snap.val();
+      if(v){
+        data = Array.isArray(v) ? v : Object.values(v);
+        render();
+        refreshOpenDetailIfNeeded();
+      }
+    });
+    detailsRef.on('value', snap => {
+      const v = snap.val();
+      if(v){ DETAILS = v; render(); refreshOpenDetailIfNeeded(); }
+    });
+    logRef.on('value', snap => {
+      const v = snap.val();
+      changeLog = v ? (Array.isArray(v) ? v : Object.values(v)) : [];
+      if(logView.style.display !== 'none') renderLog();
+    });
+    filesRef.on('value', snap => {
+      FILES = snap.val() || {};
+      refreshOpenDetailIfNeeded();
+    });
+  }
+
+  async function refreshSharedData(){
+    const btn = document.getElementById('refreshDataBtn');
+    if(btn){ btn.disabled = true; btn.textContent = '↻ Refreshing…'; }
+    data = await waitForRef(registerRef, data);
+    if(!Array.isArray(data)) data = Object.values(data);
+    await loadDetails();
+    await loadLog();
+    FILES = await waitForRef(filesRef, FILES);
+    render();
+    refreshOpenDetailIfNeeded();
+    if(btn){ btn.disabled = false; btn.textContent = '↻ Refresh data'; }
+  }
+  document.getElementById('refreshDataBtn').onclick = refreshSharedData;
+
+  async function persist(){
+    saveState.textContent = 'Saving…';
+    try{
+      await registerRef.set(data);
+      saveState.textContent = 'Saved · ' + new Date().toLocaleTimeString();
+    }catch(e){
+      saveState.textContent = 'Save failed — check your connection';
+    }
+  }
+
+  function renderKPIs(){
+    const total = data.length;
+    const pass = data.filter(d=>d.status==='PASS').length;
+    const fail = data.filter(d=>d.status==='FAIL').length;
+    const needs = data.filter(d=>d.status==='NEEDS_IMPROVEMENT').length;
+    const pending = data.filter(d=>d.status==='PENDING').length;
+    const pct = n => total ? Math.round(n/total*100) : 0;
+    kpisEl.innerHTML = `
+      <div class="kpi total"><div class="num">${total}</div><div class="lbl">Total LEV Systems</div><div class="bar"><span></span></div></div>
+      <div class="kpi pass"><div class="num">${pass}</div><div class="lbl">Pass</div><div class="bar"><span style="width:${pct(pass)}%"></span></div></div>
+      <div class="kpi needs"><div class="num">${needs}</div><div class="lbl">Needs Improvement</div><div class="bar"><span style="width:${pct(needs)}%"></span></div></div>
+      <div class="kpi fail"><div class="num">${fail}</div><div class="lbl">Fail</div><div class="bar"><span style="width:${pct(fail)}%"></span></div></div>
+      <div class="kpi pending"><div class="num">${pending}</div><div class="lbl">Pending / Not Tested</div><div class="bar"><span style="width:${pct(pending)}%"></span></div></div>
+    `;
+  }
+
+  const REGISTER_FIELD_LABELS = {
+    owner:'LEV Owner', actions:'Actions Identified', responsible:'Responsible Person',
+    due:'Due Date', completed:'Completion Date', commissioning:'Commissioning Report', manual:'User Manual'
+  };
+
+  function fieldUpdate(idx, key, value){
+    if(!isEditor) return;
+    const row = data[idx];
+    const oldVal = row[key];
+    if(oldVal === value) return;
+    row[key] = value;
+    logChange(row.id, 'Register', REGISTER_FIELD_LABELS[key] || key, oldVal, value);
+    persist();
+    renderRows();
+    renderKPIs();
+  }
+
+  function renderRows(){
+    const filter = filterStatus.value;
+    tbody.innerHTML = '';
+    data.forEach((row, idx) => {
+      if(filter !== 'ALL' && row.status !== filter) return;
+      const tr = document.createElement('tr');
+      tr.className = rowClass(row.status);
+
+      tr.innerHTML = `
+        <td class="id-cell" data-open="${row.id}">${row.id}<span class="arrow">→</span></td>
+        <td><span class="loc-link" data-open="${row.id}">${row.location||'—'}</span></td>
+        <td><span ${isEditor?'contenteditable="true"':''} data-ph="—" data-field="owner">${row.owner||''}</span></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td><span class="status-badge ${row.status}">${statusLabel(row.status)}</span></td>
+        <td><span ${isEditor?'contenteditable="true"':''} data-ph="none" data-field="actions">${row.actions||''}</span></td>
+        <td><span ${isEditor?'contenteditable="true"':''} data-ph="—" data-field="responsible">${row.responsible||''}</span></td>
+        <td><span ${isEditor?'contenteditable="true"':''} data-ph="—" data-field="due">${row.due||''}</span></td>
+        <td><span ${isEditor?'contenteditable="true"':''} data-ph="—" data-field="completed">${row.completed||''}</span></td>
+        <td class="last-updated">${row.lastUpdatedBy ? `<b>${row.lastUpdatedBy}</b>${fmtWhen(row.lastUpdatedAt)}` : '<span style="color:#B7C2B4;">No edits yet</span>'}</td>
+        <td></td>
+      `;
+
+      if(isEditor){
+        // commissioning yes/no select
+        const tdComm = tr.children[3];
+        const commSel = document.createElement('select');
+        ['Yes','No'].forEach(o=>{
+          const opt = document.createElement('option'); opt.value=o; opt.textContent=o;
+          if(row.commissioning===o) opt.selected = true;
+          commSel.appendChild(opt);
+        });
+        commSel.onchange = () => fieldUpdate(idx, 'commissioning', commSel.value);
+        tdComm.appendChild(commSel);
+
+        // user manual yes/no select
+        const tdManual = tr.children[4];
+        const manSel = document.createElement('select');
+        ['Yes','No'].forEach(o=>{
+          const opt = document.createElement('option'); opt.value=o; opt.textContent=o;
+          if(row.manual===o) opt.selected = true;
+          manSel.appendChild(opt);
+        });
+        manSel.onchange = () => fieldUpdate(idx, 'manual', manSel.value);
+        tdManual.appendChild(manSel);
+      } else {
+        tr.children[3].innerHTML = `<span class="yn ${row.commissioning}">${row.commissioning}</span>`;
+        tr.children[4].innerHTML = `<span class="yn ${row.manual}">${row.manual}</span>`;
+      }
+
+      // avg hood velocity — computed automatically from that LEV's Hood Test Results, not manually entered
+      const tdTest = tr.children[5];
+      const typeLabel = velocityRangeFor(row.location).label === 'Dust Collector' ? 'D' : 'L';
+      tdTest.innerHTML = row.testResult===null||row.testResult===undefined
+        ? `<span class="bar-val" style="color:var(--pending);">— <span style="font-size:10px; font-weight:600;">(${typeLabel})</span></span>`
+        : `<span class="bar-val">${row.testResult.toFixed(2)} m/s <span style="font-size:10px; font-weight:600; color:var(--ink-soft);">(${typeLabel})</span></span>`;
+
+      // delete row
+      const tdActions = tr.children[12];
+      if(isEditor){
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon-btn';
+        delBtn.title = 'Remove system';
+        delBtn.textContent = '✕';
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          if(!confirm(`Remove ${row.id} from the register? This cannot be undone.`)) return;
+          logChange(row.id, 'Register', 'System Removed', row.location, '(removed)');
+          data.splice(idx,1);
+          persist();
+          render();
+        };
+        tdActions.appendChild(delBtn);
+      }
+
+      // wire contenteditable fields
+      if(isEditor){
+        tr.querySelectorAll('[contenteditable]').forEach(el=>{
+          el.addEventListener('blur', () => {
+            fieldUpdate(idx, el.getAttribute('data-field'), el.textContent.trim());
+          });
+        });
+      }
+
+      // open detail on id / location click
+      tr.querySelectorAll('[data-open]').forEach(el=>{
+        el.addEventListener('click', () => openDetail(el.getAttribute('data-open')));
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function buildTestResultLineHtml(row){
+    const range = velocityRangeFor(row.location);
+    const sourceLabel = row.velocitySource === 'hood'
+      ? `computed automatically from Hood Test Results below (${range.label} pass range: ${range.min}–${range.max} m/s)`
+      : `no hood velocity data recorded yet`;
+    return `
+      <span class="status-badge ${row.status}">${statusLabel(row.status)}</span>
+      <span style="font-size:12px; color:var(--ink-soft); margin-left:8px;">
+        Avg. Hood Velocity: <b style="color:var(--ink); font-family:var(--mono);">${row.testResult===null||row.testResult===undefined?'Not tested':row.testResult+' m/s'}</b>
+        &nbsp;·&nbsp; ${sourceLabel}
+      </span>`;
+  }
+
+  function render(){
+    updateRoleBadges();
+    renderKPIs();
+    renderRows();
+    renderHome();
+  }
+
+  // ============ HOME DASHBOARD ============
+  const STATUS_COLOR = {
+    PASS: '#128A3E', FAIL: '#C4423A', NEEDS_IMPROVEMENT: '#B8791C', PENDING: '#8A9A85'
+  };
+
+  function buildDonut(counts, total){
+    const order = ['PASS','NEEDS_IMPROVEMENT','FAIL','PENDING'];
+    const r = 58, cx = 68, cy = 68, circ = 2*Math.PI*r;
+    let offset = 0;
+    let circles = '';
+    order.forEach(key=>{
+      const n = counts[key] || 0;
+      if(n <= 0) return;
+      const frac = total ? n/total : 0;
+      const len = frac * circ;
+      circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${STATUS_COLOR[key]}" stroke-width="18"
+        stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += len;
+    });
+    const passPct = total ? Math.round(((counts.PASS||0)/total)*100) : 0;
+    return `
+      <div class="ring-wrap">
+        <svg viewBox="0 0 136 136" width="150" height="150">
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#EEF2EC" stroke-width="18"/>
+          ${circles}
+        </svg>
+        <div class="ring-center">
+          <div class="pct">${passPct}%</div>
+          <div class="cap">Passing</div>
+        </div>
+      </div>`;
+  }
+
+  function renderHome(){
+    if(!homeView) return;
+
+    const total = data.length;
+    const counts = {PASS:0, FAIL:0, NEEDS_IMPROVEMENT:0, PENDING:0};
+    data.forEach(d=>{ counts[d.status] = (counts[d.status]||0) + 1; });
+
+    const donutHtml = buildDonut(counts, total);
+    const legendHtml = [
+      ['PASS','Pass'], ['NEEDS_IMPROVEMENT','Needs Improvement'], ['FAIL','Fail'], ['PENDING','Pending']
+    ].map(([key,label])=>`
+      <div class="li"><span class="sw" style="background:${STATUS_COLOR[key]}"></span>${label} <b style="margin-left:auto;padding-left:10px;">${counts[key]||0}</b></div>
+    `).join('');
+
+    const attention = data
+      .filter(d=>d.status==='FAIL' || d.status==='NEEDS_IMPROVEMENT')
+      .sort((a,b)=> (a.status==='FAIL'?0:1) - (b.status==='FAIL'?0:1));
+
+    const attentionHtml = attention.length ? attention.map(d=>`
+      <div class="attn-item" data-open="${d.id}">
+        <span class="status-dot ${d.status}"></span>
+        <span class="sid">${d.id}</span>
+        <span class="loc">${d.location || 'Unnamed location'}</span>
+        <span class="status-badge ${d.status}" style="font-size:9.5px;">${statusLabel(d.status)}</span>
+      </div>
+    `).join('') : `<div class="attn-empty">✓ No systems currently need attention — everything is Pass or Pending.</div>`;
+
+    const maxVal = Math.max(3.0, ...data.map(d=> d.testResult===null||d.testResult===undefined ? 0 : d.testResult));
+    const barsHtml = data.map(d=>{
+      const v = d.testResult===null||d.testResult===undefined ? null : d.testResult;
+      const pct = v===null ? 0 : Math.min(100, (v/maxVal)*100);
+      const range = velocityRangeFor(d.location);
+      const threshLow = (range.min/maxVal)*100;
+      const threshHigh = (range.max/maxVal)*100;
+      const typeTag = range.label === 'Dust Collector' ? 'D' : 'L';
+      return `
+        <div class="bar-row">
+          <span class="lbl" data-open="${d.id}" title="${range.label}: pass range ${range.min}–${range.max} m/s">${d.id.replace('LEV','')} <span style="font-size:9px; color:var(--ink-soft);">(${typeTag})</span></span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%; background:${STATUS_COLOR[d.status]};"></div>
+            <div class="bar-thresh" style="left:${threshLow}%;" title="Min ${range.min} m/s"></div>
+            <div class="bar-thresh" style="left:${threshHigh}%;" title="Max ${range.max} m/s"></div>
+          </div>
+          <span class="bar-val">${v===null ? '—' : v.toFixed(2)+' m/s'}</span>
+        </div>`;
+    }).join('');
+
+    const passingSystems = data.filter(d => d.status === 'PASS');
+    const gridHtml = passingSystems.length ? passingSystems.map(d=>{
+      const v = d.testResult===null||d.testResult===undefined ? 'Not tested' : `${d.testResult.toFixed(2)} m/s`;
+      return `
+        <div class="status-card" data-open="${d.id}">
+          <div class="top-row">
+            <span class="sid">${d.id}</span>
+            <span class="status-dot ${d.status}"></span>
+          </div>
+          <div class="loc">${d.location || '<span style="color:#B7C2B4;">Unassigned</span>'}</div>
+          <div class="val">${v}</div>
+        </div>`;
+    }).join('') : `<div class="attn-empty" style="background:var(--pending-bg); color:var(--ink-soft);">No systems are currently passing.</div>`;
+
+    homeView.innerHTML = `
+      <div class="home-grid">
+        <div class="home-panel">
+          <h3>Compliance Overview</h3>
+          <div class="sub">Share of LEV systems currently passing hood-velocity compliance checks</div>
+          <div class="donut-wrap">
+            ${donutHtml}
+            <div class="donut-legend">${legendHtml}</div>
+          </div>
+        </div>
+        <div class="home-panel">
+          <h3>Systems Needing Attention</h3>
+          <div class="sub">Fail and Needs Improvement systems, click to open</div>
+          <div class="attention-list">${attentionHtml}</div>
+        </div>
+      </div>
+
+      <div class="home-panel" style="margin-bottom:16px;">
+        <h3>How Pass / Fail Is Determined</h3>
+        <div class="sub">Status is based on average hood face velocity, measured from each system's Hood Test Results — not exposure ratio anymore</div>
+        <table class="param-table">
+          <thead><tr><th>System Type</th><th>Pass Range</th><th>Below Range</th><th>Above Range</th></tr></thead>
+          <tbody>
+            <tr><td>Dust Collector</td><td class="range">1.0 – 2.5 m/s</td><td><span class="status-badge FAIL">Fail</span></td><td><span class="status-badge NEEDS_IMPROVEMENT">Needs Improvement</span></td></tr>
+            <tr><td>LEV / Fume System</td><td class="range">0.5 – 1.0 m/s</td><td><span class="status-badge FAIL">Fail</span></td><td><span class="status-badge NEEDS_IMPROVEMENT">Needs Improvement</span></td></tr>
+            <tr><td>Any system</td><td class="range">No hood data yet</td><td colspan="2"><span class="status-badge PENDING">Pending</span></td></tr>
+          </tbody>
+        </table>
+        <div class="param-note">System type is detected automatically from the location name ("Dust Collector" in the name → Dust Collector range, otherwise LEV/fume range). Ranges follow standard ACGIH Industrial Ventilation capture-velocity guidance — confirm against your organization's official criteria if different. Below the minimum means capture is inadequate (Fail); above the maximum means the system is over-ventilating (Needs Improvement, not a safety fail).</div>
+      </div>
+
+      <div class="home-panel" style="margin-bottom:16px;">
+        <h3>Average Hood Velocity by System</h3>
+        <div class="sub">Computed automatically from each LEV's Hood Test Results — colored by Pass/Needs Improvement/Fail/Pending status</div>
+        <div class="bars-chart">${barsHtml}</div>
+      </div>
+
+      <div class="home-panel">
+        <h3>Systems Working Properly (${passingSystems.length} of ${data.length})</h3>
+        <div class="sub">LEVs currently passing compliance — updates automatically as hood test data changes</div>
+        <div class="status-grid">${gridHtml}</div>
+      </div>
+    `;
+
+    homeView.querySelectorAll('[data-open]').forEach(el=>{
+      el.addEventListener('click', ()=> openDetail(el.getAttribute('data-open')));
+    });
+  }
+
+  document.getElementById('addRowBtn').onclick = () => {
+    if(!isEditor) return;
+    const nums = data.map(d => parseInt((d.id.match(/\d+/)||['0'])[0], 10)).filter(n=>!isNaN(n));
+    const nextNum = (nums.length ? Math.max(...nums) : 0) + 1;
+    const id = 'LEV' + String(nextNum).padStart(3,'0');
+    const newRow = {
+      id, location:'', owner:'', commissioning:'No', manual:'No', testResult:null, status:'PENDING',
+      actions:'', responsible:'', due:'', completed:'', lastUpdatedBy:null, lastUpdatedAt:null
+    };
+    data.push(newRow);
+    DETAILS[id] = { duct: [], hood: [], actions_identified: [] };
+    logChange(id, 'Register', 'System Added', '—', 'New LEV system added to register');
+    persist();
+    persistDetails();
+    render();
+  };
+
+  filterStatus.onchange = renderRows;
+
+  // ============ Detail view logic ============
+  function kv(container, pairs){
+    container.innerHTML = '';
+    pairs.forEach(([label, value])=>{
+      if(value === null || value === undefined || value === '') return;
+      const dt = document.createElement('dt'); dt.textContent = label;
+      const dd = document.createElement('dd'); dd.textContent = value;
+      container.appendChild(dt); container.appendChild(dd);
+    });
+    if(!container.children.length){
+      const p = document.createElement('div');
+      p.className = 'empty-note';
+      p.textContent = 'No data recorded.';
+      container.appendChild(p);
+    }
+  }
+
+  function refreshDetailLastUpdated(){
+    const dLastUpdated = document.getElementById('dLastUpdated');
+    if(!dLastUpdated || !currentLevId) return;
+    const row = data.find(x=>x.id===currentLevId);
+    if(row) dLastUpdated.innerHTML = row.lastUpdatedBy ? `Last updated by <b>${row.lastUpdatedBy}</b> · ${fmtWhen(row.lastUpdatedAt)}` : '';
+  }
+
+  // Editable key/value renderer: always shows an input (Editor) or plain text (Viewer),
+  // even when no data has been recorded yet, so every field can be filled in from the dashboard.
+  function ekv(container, levId, fields){
+    container.innerHTML = '';
+    fields.forEach(f=>{
+      const dt = document.createElement('dt'); dt.textContent = f.label;
+      const dd = document.createElement('dd');
+      const val = DETAILS[levId][f.key];
+      if(isEditor){
+        let input;
+        if(f.type === 'select'){
+          input = document.createElement('select');
+          (f.options || ['Yes','No']).forEach(o=>{
+            const opt = document.createElement('option'); opt.value = o; opt.textContent = o;
+            if(val === o) opt.selected = true;
+            input.appendChild(opt);
+          });
+        } else if(f.type === 'textarea'){
+          input = document.createElement('textarea');
+          input.rows = 3;
+          input.value = val || '';
+        } else {
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = val || '';
+        }
+        input.className = 'kv-edit';
+        input.addEventListener('change', ()=>{
+          const oldVal = DETAILS[levId][f.key];
+          const newVal = input.value;
+          if((oldVal||'') === newVal) return;
+          DETAILS[levId][f.key] = newVal;
+          logChange(levId, 'Detail', f.label, oldVal, newVal);
+          persist();
+          persistDetails();
+          refreshDetailLastUpdated();
+        });
+        dd.appendChild(input);
+      } else {
+        dd.textContent = (val===null||val===undefined||val==='') ? '—' : val;
+      }
+      container.appendChild(dt);
+      container.appendChild(dd);
+    });
+  }
+
+  // Documents panel: Yes/No status + file attachment (stored as base64 in the live database) per doc type.
+  const DOC_TYPES = [
+    {key:'Commissioning Report:', fileKey:'commissioning', label:'Commissioning Report'},
+    {key:'User Manual:', fileKey:'manual', label:'User Manual'},
+    {key:'MSDS Sheets:', fileKey:'msds', label:'MSDS Sheet'},
+    {key:'Log Book:', fileKey:'logbook', label:'Log Book'},
+  ];
+  const MAX_FILE_BYTES = 4 * 1024 * 1024;
+
+  function renderDocumentsPanel(){
+    const container = document.getElementById('dDocs');
+    const levId = currentLevId;
+    if(!container || !levId) return;
+    container.innerHTML = '';
+
+    DOC_TYPES.forEach(dt=>{
+      const row = document.createElement('div');
+      row.className = 'doc-row';
+      const statusVal = DETAILS[levId][dt.key];
+      const file = FILES[levId] ? FILES[levId][dt.fileKey] : null;
+
+      const left = document.createElement('div');
+      left.className = 'doc-row-left';
+      const title = document.createElement('span');
+      title.className = 'doc-title-txt';
+      title.textContent = dt.label;
+      left.appendChild(title);
+
+      if(isEditor){
+        const sel = document.createElement('select');
+        ['Yes','No'].forEach(o=>{
+          const opt = document.createElement('option'); opt.value=o; opt.textContent=o;
+          if(statusVal===o) opt.selected=true;
+          sel.appendChild(opt);
+        });
+        sel.addEventListener('change', ()=>{
+          const oldVal = DETAILS[levId][dt.key];
+          if(oldVal === sel.value) return;
+          DETAILS[levId][dt.key] = sel.value;
+          logChange(levId, 'Documents', dt.label + ' on file?', oldVal, sel.value);
+          persist(); persistDetails(); refreshDetailLastUpdated();
+        });
+        left.appendChild(sel);
+      } else {
+        const badge = document.createElement('span');
+        badge.className = 'yn ' + (statusVal || 'No');
+        badge.textContent = statusVal || 'No';
+        left.appendChild(badge);
+      }
+
+      const right = document.createElement('div');
+      right.className = 'doc-row-right';
+      if(file){
+        const link = document.createElement('a');
+        link.href = file.dataUrl;
+        link.download = file.name;
+        link.className = 'doc-file-link';
+        link.textContent = `📎 ${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+        right.appendChild(link);
+        if(isEditor){
+          const rm = document.createElement('button');
+          rm.className = 'icon-btn';
+          rm.textContent = '✕';
+          rm.title = 'Remove file';
+          rm.onclick = async ()=>{
+            logChange(levId, 'Documents', dt.label + ' file removed', file.name, '(removed)');
+            try{ await filesRef.child(levId).child(dt.fileKey).remove(); }catch(e){}
+            if(FILES[levId]) delete FILES[levId][dt.fileKey];
+            persist(); refreshDetailLastUpdated();
+            renderDocumentsPanel();
+          };
+          right.appendChild(rm);
+        }
+      } else if(isEditor){
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.pdf,.xlsx,.xls,.doc,.docx,.csv,.jpg,.jpeg,.png';
+        fileInput.className = 'doc-file-input';
+        fileInput.addEventListener('change', ()=>{
+          const f = fileInput.files[0];
+          if(!f) return;
+          if(f.size > MAX_FILE_BYTES){
+            alert('That file is larger than 4MB. Please attach a smaller file — documents are stored directly in the live database, so very large files will slow the dashboard down for everyone.');
+            fileInput.value = '';
+            return;
+          }
+          const uploadLabel = right.querySelector('.doc-file-input');
+          if(uploadLabel) uploadLabel.disabled = true;
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const fileRecord = {
+              name: f.name, size: f.size, dataUrl: reader.result,
+              uploadedBy: currentUser, uploadedAt: new Date().toISOString()
+            };
+            try{
+              await filesRef.child(levId).child(dt.fileKey).set(fileRecord);
+              if(!FILES[levId]) FILES[levId] = {};
+              FILES[levId][dt.fileKey] = fileRecord;
+              logChange(levId, 'Documents', dt.label + ' uploaded', '—', f.name);
+              persist(); refreshDetailLastUpdated();
+            }catch(e){
+              alert('Upload failed — check your internet connection and try again.');
+            }
+            renderDocumentsPanel();
+          };
+          reader.readAsDataURL(f);
+        });
+        right.appendChild(fileInput);
+      } else {
+        const none = document.createElement('span');
+        none.className = 'empty-note';
+        none.textContent = 'No file attached';
+        right.appendChild(none);
+      }
+
+      row.appendChild(left);
+      row.appendChild(right);
+      container.appendChild(row);
+    });
+  }
+
+  function priorityClass(p){
+    if(!p) return 'na';
+    if(p.startsWith('1')) return 'high';
+    if(p.startsWith('2')) return 'normal';
+    if(p.startsWith('3')) return 'routine';
+    return 'na';
+  }
+
+  function renderDetailPanels(id){
+    const row = data.find(r=>r.id===id);
+    if(!row) return;
+    if(!DETAILS[id]) DETAILS[id] = {};
+    if(!DETAILS[id].duct) DETAILS[id].duct = [];
+    if(!DETAILS[id].hood) DETAILS[id].hood = [];
+    const det = DETAILS[id];
+
+    document.getElementById('dTitle').textContent = id;
+    document.getElementById('dLoc').textContent = det['Location of LEV:'] || row.location || '—';
+    const badge = document.getElementById('dStatusBadge');
+    badge.className = 'status-badge ' + row.status;
+    badge.textContent = statusLabel(row.status);
+    const dLastUpdatedEl = document.getElementById('dLastUpdated');
+    dLastUpdatedEl.innerHTML = row.lastUpdatedBy ? `Last updated by <b>${row.lastUpdatedBy}</b> · ${fmtWhen(row.lastUpdatedAt)}` : 'No edits recorded yet for this system.';
+
+    document.getElementById('dTestResultLine').innerHTML = buildTestResultLineHtml(row);
+
+    ekv(document.getElementById('dTestSummary'), id, [
+      {label:'Date of this test', key:'Date of this test:'},
+      {label:'Date of last test', key:'Date of last test:'},
+      {label:'Test frequency', key:'Test frequency:'},
+      {label:'Test conducted by', key:'Test Conducted By:'},
+    ]);
+
+    renderDocumentsPanel();
+
+    ekv(document.getElementById('dSystem'), id, [
+      {label:'Purpose', key:'The purpose of this system is to:'},
+      {label:'Status at time of test', key:'Status of the process at time of test:'},
+      {label:'Still performing satisfactorily?', key:'Is the system still maintaining satisfactory performance?', type:'select'},
+    ]);
+
+    ekv(document.getElementById('dReview'), id, [
+      {label:'Materials/processes changed', key:'Have the materials processes changed:', type:'select'},
+      {label:'Work procedures changed', key:'Have the work procedures changed:', type:'select'},
+      {label:'System layout changed', key:'Has the system layout changed:', type:'select'},
+    ]);
+
+    ekv(document.getElementById('dSubstances'), id, [
+      {label:'Are the substances flammable?', key:'Are the substances flammable:', type:'select'},
+      {label:'Are the substances explosive?', key:'Are the substances explosive:', type:'select'},
+      {label:'Potential health effects from breathing in the substance(s)', key:'Potential health effects from breathing in the substance(s):', type:'textarea'},
+    ]);
+
+    ekv(document.getElementById('dFan'), id, [
+      {label:'Fan type', key:'Fan type'},
+      {label:'Manufacturer', key:'Manufacturer'},
+      {label:'Model', key:'Model'},
+      {label:'Serial number', key:'Serial number'},
+      {label:'Type of impeller', key:'Type of impeller'},
+      {label:'Condition of fan', key:'Condition of fan'},
+      {label:'Type of drive', key:'Type of drive'},
+      {label:'Electrical supply', key:'Electrical supply'},
+      {label:'Motor size', key:'Motor size'},
+      {label:'Motor speed', key:'Motor speed (approx)'},
+    ]);
+
+    ekv(document.getElementById('dFilter'), id, [
+      {label:'Filter type', key:'Filter type'},
+      {label:'Filter media type', key:'Filter media type'},
+      {label:'Filtration area', key:'Filtration area'},
+      {label:'Condition of filter', key:'Condition of filter'},
+      {label:'Condition of filter media', key:'Condition of filter media'},
+      {label:'Differential pressure', key:'Differential Pressure'},
+    ]);
+
+    ekv(document.getElementById('dDuct'), id, [
+      {label:'Condition of duct', key:'Condition of duct'},
+      {label:'Suitability of ductwork', key:'Suitability of ductwork'},
+      {label:'Position of unit', key:'Suitability of position of unit'},
+      {label:'Type of stack/discharge', key:'Type of stack/discharge'},
+      {label:'Suitability of discharge', key:'Suitability of discharge'},
+    ]);
+
+    ekv(document.getElementById('dMakeup'), id, [
+      {label:'Adequate make-up air', key:'Is there adequate make up air', type:'select'},
+      {label:'Induced drafts', key:'Are there any induced drafts', type:'select'},
+      {label:'Equipment used for assessment', key:'Equipment used for assessment'},
+    ]);
+
+    const actionsList = document.getElementById('dActions');
+    actionsList.innerHTML = '';
+    const acts = det['actions_identified'] || [];
+    if(acts.length){
+      acts.forEach(a=>{
+        const li = document.createElement('li');
+        const pr = document.createElement('span');
+        pr.className = 'prio ' + priorityClass(a.priority);
+        pr.textContent = a.priority ? a.priority.replace(/^\d\.\s*/,'') : 'Note';
+        const span = document.createElement('span');
+        span.textContent = a.action;
+        li.appendChild(pr); li.appendChild(span);
+        actionsList.appendChild(li);
+      });
+    } else {
+      actionsList.innerHTML = '<li class="empty-note" style="border:none; padding:0;">No corrective actions identified for this system.</li>';
+    }
+
+    ekv(document.getElementById('dMeta'), id, [
+      {label:'Site name', key:'Site Name:'},
+      {label:'Site address', key:'Site Address:', type:'textarea'},
+      {label:'Purpose of test', key:'Purpose of test:'},
+    ]);
+
+    renderDuctTable();
+    renderHoodTable();
+  }
+
+  function openDetail(id){
+    const row = data.find(r=>r.id===id);
+    if(!row) return;
+    currentLevId = id;
+    renderDetailPanels(id);
+
+    if(listView.style.display !== 'none') lastMainView = 'register';
+    if(homeView.style.display !== 'none') lastMainView = 'home';
+    if(logView.style.display !== 'none') lastMainView = 'log';
+    homeView.style.display = 'none';
+    listView.style.display = 'none';
+    logView.style.display = 'none';
+    detailView.style.display = 'block';
+    window.scrollTo(0,0);
+  }
+
+  document.getElementById('backBtn').onclick = () => {
+    detailView.style.display = 'none';
+    switchTab(lastMainView === 'register' || lastMainView === 'log' ? lastMainView : 'home');
+  };
+
+  function switchTab(tab){
+    document.getElementById('tabHomeBtn').classList.toggle('active', tab==='home');
+    document.getElementById('tabRegisterBtn').classList.toggle('active', tab==='register');
+    document.getElementById('tabLogBtn').classList.toggle('active', tab==='log');
+    homeView.style.display = tab==='home' ? 'block' : 'none';
+    listView.style.display = tab==='register' ? 'block' : 'none';
+    logView.style.display = tab==='log' ? 'block' : 'none';
+    detailView.style.display = 'none';
+    lastMainView = tab;
+    if(tab==='log') renderLog();
+    window.scrollTo(0,0);
+  }
+  document.getElementById('tabHomeBtn').onclick = () => switchTab('home');
+  document.getElementById('tabRegisterBtn').onclick = () => switchTab('register');
+  document.getElementById('tabLogBtn').onclick = () => switchTab('log');
+
+  // ===== Role gate: Viewer vs Editor =====
+  let isEditor = false;
+  const roleGateEl = document.getElementById('roleGate');
+  const editorNameBlock = document.getElementById('editorNameBlock');
+  const editorNameInput = document.getElementById('editorNameInput');
+  const editorNameError = document.getElementById('editorNameError');
+
+  function showRoleGate(){
+    editorNameBlock.style.display = 'none';
+    editorNameError.textContent = '';
+    roleGateEl.style.display = 'flex';
+  }
+  function hideRoleGate(){
+    roleGateEl.style.display = 'none';
+  }
+  function updateRoleBadges(){
+    const html = isEditor
+      ? `<span class="editor-badge switch-role-btn" title="Click to switch role">✏️ Editor: ${currentUser}</span>`
+      : `<span class="viewer-badge switch-role-btn" title="Click to switch role">👁️ Viewer mode (read-only)</span>`;
+    const a = document.getElementById('roleStatusBadge');
+    const b = document.getElementById('globalRoleBadge');
+    if(a) a.innerHTML = html;
+    if(b) b.innerHTML = html;
+    document.querySelectorAll('.switch-role-btn').forEach(el=>{
+      el.addEventListener('click', showRoleGate);
+    });
+    document.querySelectorAll('.editor-only').forEach(el=>{
+      el.style.display = isEditor ? '' : 'none';
+    });
+  }
+
+  document.getElementById('roleViewerBtn').onclick = () => {
+    isEditor = false;
+    hideRoleGate();
+    updateRoleBadges();
+    render();
+  };
+  document.getElementById('roleEditorBtn').onclick = () => {
+    editorNameBlock.style.display = 'block';
+    editorNameInput.focus();
+  };
+  document.getElementById('editorContinueBtn').onclick = () => {
+    const name = editorNameInput.value.trim();
+    if(!name){
+      editorNameError.textContent = 'Please enter your name to continue as Editor.';
+      editorNameInput.focus();
+      return;
+    }
+    isEditor = true;
+    currentUser = name;
+    persistUser();
+    hideRoleGate();
+    updateRoleBadges();
+    render();
+  };
+  editorNameInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') document.getElementById('editorContinueBtn').click();
+  });
+
+  // ===== Change Log view =====
+  function renderLog(){
+    const sel = document.getElementById('logFilterLev');
+    const existingVal = sel.value || 'ALL';
+    const ids = data.map(d=>d.id);
+    sel.innerHTML = '<option value="ALL">All systems</option>' + ids.map(id=>`<option value="${id}">${id}</option>`).join('');
+    sel.value = ids.includes(existingVal) ? existingVal : 'ALL';
+
+    const filterVal = sel.value;
+    const rows = changeLog.filter(e => filterVal==='ALL' || e.levId===filterVal);
+    const tbody2 = document.getElementById('logTbody');
+    if(!rows.length){
+      tbody2.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center;" class="empty-note">No changes logged yet. Edits you make will appear here.</td></tr>`;
+      return;
+    }
+    tbody2.innerHTML = rows.map(e=>`
+      <tr>
+        <td style="white-space:nowrap;">${new Date(e.ts).toLocaleString()}</td>
+        <td><span class="lbl" style="cursor:pointer;" data-open="${e.levId}">${e.levId}</span></td>
+        <td>${e.area}</td>
+        <td>${e.field}</td>
+        <td style="max-width:180px; white-space:normal;">${e.oldVal}</td>
+        <td style="max-width:180px; white-space:normal; font-weight:700;">${e.newVal}</td>
+        <td>${e.user}</td>
+      </tr>
+    `).join('');
+    tbody2.querySelectorAll('[data-open]').forEach(el=>{
+      el.addEventListener('click', ()=> openDetail(el.getAttribute('data-open')));
+    });
+  }
+  document.getElementById('logFilterLev').addEventListener('change', renderLog);
+  document.getElementById('clearLogBtn').onclick = () => {
+    if(!isEditor) return;
+    if(confirm('Clear the entire change log? This cannot be undone.')){
+      changeLog = [];
+      persistLog();
+      renderLog();
+    }
+  };
+
+  // ===== Editable Duct / Hood test-point tables =====
+  const DUCT_COLS = [
+    {key:'id', label:'TP', type:'num', cls:'id-in'},
+    {key:'dia', label:'Dia/Width (m)', type:'num'},
+    {key:'shape', label:'Shape', type:'txt'},
+    {key:'area', label:'Area (m²)', type:'num'},
+    {key:'staticP', label:'Static P (Pa)', type:'num'},
+    {key:'velocityP', label:'Velocity P (Pa)', type:'num'},
+    {key:'totalP', label:'Total P (Pa)', type:'num'},
+    {key:'velocity', label:'Velocity (m/s)', type:'num'},
+    {key:'volM3s', label:'Volume (m³/s)', type:'num'},
+    {key:'volM3h', label:'Volume (m³/h)', type:'num'},
+    {key:'commStaticP', label:'Comm. Static P', type:'num'},
+    {key:'commVelocity', label:'Comm. Velocity', type:'num'},
+    {key:'commVol', label:'Comm. Volume', type:'num'},
+  ];
+  const HOOD_COLS = [
+    {key:'id', label:'TP', type:'num', cls:'id-in'},
+    {key:'dia', label:'Dia/Width (m)', type:'num'},
+    {key:'shape', label:'Shape', type:'txt'},
+    {key:'area', label:'Area (m²)', type:'num'},
+    {key:'staticP', label:'Static P Behind Hood (Pa)', type:'num'},
+    {key:'velocity', label:'Velocity (m/s)', type:'num'},
+    {key:'volM3s', label:'Volume (m³/s)', type:'num'},
+    {key:'volM3h', label:'Volume (m³/h)', type:'num'},
+    {key:'commStaticP', label:'Comm. Static P', type:'num'},
+    {key:'commVelocity', label:'Comm. Velocity', type:'num'},
+    {key:'commVol', label:'Comm. Volume', type:'num'},
+  ];
+
+  function renderPointTable(tableId, kind, cols){
+    const table = document.getElementById(tableId);
+    const rows = DETAILS[currentLevId][kind];
+    let thead = '<thead><tr>' + cols.map(c=>`<th>${c.label}</th>`).join('') + '<th></th></tr></thead>';
+    let tbodyHtml = '<tbody></tbody>';
+    table.innerHTML = thead + tbodyHtml;
+    const tb = table.querySelector('tbody');
+
+    if(!rows.length){
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = cols.length + 1;
+      td.className = 'empty-note';
+      td.style.padding = '14px';
+      td.textContent = 'No test points recorded for this LEV. Use "Add test point" to enter data.';
+      tr.appendChild(td);
+      tb.appendChild(tr);
+      return;
+    }
+
+    rows.forEach((r, idx)=>{
+      const tr = document.createElement('tr');
+      cols.forEach(c=>{
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.className = (c.type==='txt' ? 'txt' : '') + (c.cls ? ' '+c.cls : '');
+        input.type = c.type==='num' ? 'number' : 'text';
+        if(c.type==='num') input.step = 'any';
+        const v = r[c.key];
+        input.value = (v===null||v===undefined) ? '' : v;
+        if(!isEditor) input.disabled = true;
+        input.addEventListener('change', ()=>{
+          if(!isEditor) return;
+          let val = input.value;
+          if(c.type==='num'){
+            val = val === '' ? null : parseFloat(val);
+          }
+          const oldVal = DETAILS[currentLevId][kind][idx][c.key];
+          if(oldVal === val) return;
+          DETAILS[currentLevId][kind][idx][c.key] = val;
+          const areaLabel = kind === 'duct' ? 'Duct' : 'Hood';
+          logChange(currentLevId, areaLabel, `TP${r.id!==undefined?r.id:idx+1} — ${c.label}`, oldVal, val);
+          if(kind === 'hood') recalcRowFromHood(currentLevId);
+          persist();
+          persistDetails();
+          const dTestResultLine = document.getElementById('dTestResultLine');
+          const rowNow = data.find(x=>x.id===currentLevId);
+          if(dTestResultLine && rowNow){
+            dTestResultLine.innerHTML = buildTestResultLineHtml(rowNow);
+          }
+          const dLastUpdated = document.getElementById('dLastUpdated');
+          if(dLastUpdated && rowNow){
+            dLastUpdated.innerHTML = rowNow.lastUpdatedBy ? `Last updated by <b>${rowNow.lastUpdatedBy}</b> · ${fmtWhen(rowNow.lastUpdatedAt)}` : '';
+          }
+        });
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+      const tdDel = document.createElement('td');
+      tdDel.className = 'del-cell';
+      if(isEditor){
+      const delBtn = document.createElement('button');
+      delBtn.className = 'icon-btn';
+      delBtn.textContent = '✕';
+      delBtn.title = 'Remove test point';
+      delBtn.onclick = ()=>{
+        const areaLabel = kind === 'duct' ? 'Duct' : 'Hood';
+        logChange(currentLevId, areaLabel, `TP${r.id!==undefined?r.id:idx+1} removed`, 'Test point present', 'Test point removed');
+        DETAILS[currentLevId][kind].splice(idx,1);
+        if(kind === 'hood') recalcRowFromHood(currentLevId);
+        persist();
+        persistDetails();
+        if(kind==='duct') renderDuctTable(); else renderHoodTable();
+      };
+      tdDel.appendChild(delBtn);
+      }
+      tr.appendChild(tdDel);
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderDuctTable(){ renderPointTable('dDuctTable', 'duct', DUCT_COLS); }
+  function renderHoodTable(){ renderPointTable('dHoodTable', 'hood', HOOD_COLS); }
+
+  document.getElementById('addDuctRow').onclick = ()=>{
+    if(!isEditor) return;
+    if(!currentLevId) return;
+    const rows = DETAILS[currentLevId].duct;
+    rows.push({id: rows.length+1, dia:null, shape:'', area:null, staticP:null, velocityP:null, totalP:null, velocity:null, volM3s:null, volM3h:null, commStaticP:null, commVelocity:null, commVol:null});
+    logChange(currentLevId, 'Duct', `TP${rows.length} added`, '—', 'New duct test point added');
+    persist();
+    persistDetails();
+    renderDuctTable();
+  };
+  document.getElementById('addHoodRow').onclick = ()=>{
+    if(!isEditor) return;
+    if(!currentLevId) return;
+    const rows = DETAILS[currentLevId].hood;
+    rows.push({id: rows.length+1, dia:null, shape:'', area:null, staticP:null, velocity:null, volM3s:null, volM3h:null, commStaticP:null, commVelocity:null, commVol:null});
+    logChange(currentLevId, 'Hood', `TP${rows.length} added`, '—', 'New hood test point added');
+    persist();
+    persistDetails();
+    renderHoodTable();
+  };
+
+  loadData();
+})();
+</script>
+</body>
+</html>
